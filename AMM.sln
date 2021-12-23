@@ -1,0 +1,37 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.136
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AMM", "AMM\AMM.csproj", "{F01FD888-0028-425F-8196-A7AFDC25C157}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F01FD888-0028-425F-8196-A7AFDC25C157}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F01FD888-0028-425F-8196-A7AFDC25C157}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F01FD888-0028-425F-8196-A7AFDC25C157}.Debug|x64.ActiveCfg = Debug|x64
+		{F01FD888-0028-425F-8196-A7AFDC25C157}.Debug|x64.Build.0 = Debug|x64
+		{F01FD888-0028-425F-8196-A7AFDC25C157}.Debug|x86.ActiveCfg = Debug|x86
+		{F01FD888-0028-425F-8196-A7AFDC25C157}.Debug|x86.Build.0 = Debug|x86
+		{F01FD888-0028-425F-8196-A7AFDC25C157}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F01FD888-0028-425F-8196-A7AFDC25C157}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F01FD888-0028-425F-8196-A7AFDC25C157}.Release|x64.ActiveCfg = Release|x64
+		{F01FD888-0028-425F-8196-A7AFDC25C157}.Release|x64.Build.0 = Release|x64
+		{F01FD888-0028-425F-8196-A7AFDC25C157}.Release|x86.ActiveCfg = Release|x86
+		{F01FD888-0028-425F-8196-A7AFDC25C157}.Release|x86.Build.0 = Release|x86
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {BFE1309E-0EC2-46BB-90E8-B83C1A19C693}
+	EndGlobalSection
+EndGlobal
