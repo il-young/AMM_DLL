@@ -17,7 +17,10 @@ namespace AMM
         public string Connect()
         {
             if (MSSql != null)
+            {
+                ReturnLogSave("SqlManager is null");
                 return "NG";
+            }
 
             string strConnetion = string.Format("server=10.135.200.35;database=ATK4-AMM-DBv1;user id=amm;password=amm@123"); //AMM SERVER
 
@@ -26,11 +29,13 @@ namespace AMM
             if (MSSql.OpenTest() == false)
             {
                 bConnection = false;
+                ReturnLogSave("OpenTest Fail");
                 return "NG";
             }
             else
                 bConnection = true;
 
+            ReturnLogSave("Connect OK");
             return "OK";
 
         }
@@ -57,8 +62,18 @@ namespace AMM
         {
             string strSendtime = string.Format("{0}{1:00}{2:00}{3:00}{4:00}{5:00}", DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, DateTime.Now.Hour, DateTime.Now.Minute, DateTime.Now.Second);
 
-            if (strLinecode == "" || strEquipid == "")
-                return "NG";
+            if (strLinecode == "")
+            {
+                ReturnLogSave("SetEqStart EMPTY LINECODE");
+                return "EMPTY LINECODE";
+            }
+
+            if (strEquipid == "")
+            {
+                ReturnLogSave("SetEqStart EMPTY EQUIP");
+                return "EMPTY EQUIPID";
+            }
+
 
             string query = "";
             int nReturn = 0;
@@ -73,7 +88,10 @@ namespace AMM
                 nReturn = MSSql.SetData(query);
 
                 if (nReturn == 0)
-                    return "NG";
+                {
+                    ReturnLogSave(string.Format("SetEqStart TB_STATUS UPDATE FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
+                    return "TB_STATUS UPDATE FAIL";
+                }
             }
             else if (nCheck == 0)
             {
@@ -83,11 +101,15 @@ namespace AMM
                 nReturn = MSSql.SetData(query);
 
                 if (nReturn == 0)
-                    return "NG";
+                {
+                    ReturnLogSave(string.Format("SetEqStart TB_STATUS INSERT FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
+                    return "TB_STATUS INSERT FAIL";
+                }
             }
             else
             {
-                return "NG";
+                ReturnLogSave(string.Format("SetEqStart EQUIPID CHECK FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
+                return "EQUIPID CHECK FAIL";
             }
 
             ///////Log 저장
@@ -97,7 +119,10 @@ namespace AMM
             nReturn = MSSql.SetData(query);
 
             if (nReturn == 0)
-                return "NG";
+            {
+                ReturnLogSave(string.Format("SetEqStart TB_STATUS_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}", strLinecode, strEquipid));
+                return "TB_STATUS_HISTORY INSERT FAIL";
+            }
 
             ////Skynet////
             if (bConnection)
@@ -112,8 +137,17 @@ namespace AMM
         {
             string strSendtime = string.Format("{0}{1:00}{2:00}{3:00}{4:00}{5:00}", DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, DateTime.Now.Hour, DateTime.Now.Minute, DateTime.Now.Second);
 
-            if (strLinecode == "" || strEquipid == "")
-                return "NG";
+            if (strLinecode == "")
+            {
+                ReturnLogSave("SetEqEnd EMPTY LINECODE");
+                return "EMPTY LINECODE";
+            }
+
+            if (strEquipid == "")
+            {
+                ReturnLogSave("SetEqEnd EMPTY EQUIP");
+                return "EMPTY EQUIPID";
+            }
 
             string query = "";
             int nReturn = 0;
@@ -128,7 +162,10 @@ namespace AMM
                 nReturn = MSSql.SetData(query);
 
                 if (nReturn == 0)
-                    return "NG";
+                {
+                    ReturnLogSave(string.Format("SetEqEnd TB_STATUS UPDATE FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
+                    return "TB_STATUS UPDATE FAIL";
+                }
             }
             else if (nCheck == 0)
             {
@@ -138,11 +175,15 @@ namespace AMM
                 nReturn = MSSql.SetData(query);
 
                 if (nReturn == 0)
-                    return "NG";
+                {
+                    ReturnLogSave(string.Format("SetEqEnd TB_STATUS INSERT FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
+                    return "TB_STATUS INSERT FAIL";
+                }
             }
             else
             {
-                return "NG";
+                ReturnLogSave(string.Format("SetEqEnd EQUIPID CHECK FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
+                return "EQUIPID CHECK FAIL";
             }
 
             ////////Log 저장
@@ -152,7 +193,10 @@ namespace AMM
             nReturn = MSSql.SetData(query);
 
             if (nReturn == 0)
-                return "NG";
+            {
+                ReturnLogSave(string.Format("SetEqEnd TB_STATUS_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
+                return "TB_STATUS_HISTORY INSERT FAIL";
+            }
 
             ////Skynet////
             if (bConnection)
@@ -170,8 +214,17 @@ namespace AMM
             strStatus = strStatus.ToUpper();
             strType = strType.ToUpper();
 
-            if (strLinecode == "" || strEquipid == "")
-                return "NG";
+            if (strLinecode == "")
+            {
+                ReturnLogSave("SetEqStatus EMPTY LINECODE");
+                return "EMPTY LINECODE";
+            }
+
+            if (strEquipid == "")
+            {
+                ReturnLogSave("SetEqStatus EMPTY EQUIP");
+                return "EMPTY EQUIPID";
+            }
 
             string query = "";
             int nReturn = 0;
@@ -186,7 +239,10 @@ namespace AMM
                 nReturn = MSSql.SetData(query);
 
                 if (nReturn == 0)
-                    return "NG";
+                {
+                    ReturnLogSave(string.Format("SetEqStatus TB_STATUS UPDATE FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
+                    return "TB_STATUS UPDATE FAIL";
+                }
             }
             else if (nCheck == 0)
             {
@@ -196,11 +252,15 @@ namespace AMM
                 nReturn = MSSql.SetData(query);
 
                 if (nReturn == 0)
-                    return "NG";
+                {
+                    ReturnLogSave(string.Format("SetEqStatus TB_STATUS INSERT FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
+                    return "TB_STATUS INSERT FAIL";
+                }
             }
             else
             {
-                return "NG";
+                ReturnLogSave(string.Format("SetEqStatus EQUIPID CHECK FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
+                return "EQUIPID CHECK FAIL";
             }
 
             //////Log 저장
@@ -210,7 +270,7 @@ namespace AMM
             nReturn = MSSql.SetData(query);
 
             if (nReturn == 0)
-                return "NG";
+                return "NO DATA";
 
             ////Skynet////
             if (bConnection)
@@ -247,8 +307,11 @@ namespace AMM
             strStatus = strStatus.ToUpper();
             strType = strType.ToUpper();
 
-            if (strLinecode == "" || strEquipid == "")
-                return "NG";
+            if (strLinecode == "")
+                return "EMPTY LINECODE";
+
+            if (strEquipid == "")
+                return "EMPTY EQUIPID";
 
             string query = "";
             int nReturn = 0;
@@ -263,7 +326,7 @@ namespace AMM
                 nReturn = MSSql.SetData(query);
 
                 if (nReturn == 0)
-                    return "NG";
+                    return "NO DATA";
             }
             else if (nCheck == 0)
             {
@@ -273,12 +336,12 @@ namespace AMM
                 nReturn = MSSql.SetData(query);
 
                 if (nReturn == 0)
-                    return "NG";
+                    return "NO DATA";
 
             }
             else
             {
-                return "NG";
+                return "NO EQUIPID";
             }
 
             /////Log 저장
@@ -288,7 +351,7 @@ namespace AMM
             nReturn = MSSql.SetData(query);
 
             if (nReturn == 0)
-                return "NG";
+                return "NO DATA";
 
             ////Skynet////
             if (bConnection)
@@ -349,7 +412,7 @@ namespace AMM
             int nJudge = MSSql.SetData(queryList1); ///return 확인 해서 false 값 날려 야 함.
 
             if (nJudge == 0)
-                return "NG";
+                return "PICK ID INSERT FAIL";
 
             string query2 = "";
             List<string> queryList2 = new List<string>();
@@ -363,7 +426,7 @@ namespace AMM
             nJudge = MSSql.SetData(queryList2); ///return 확인 해서 false 값 날려 야 함.
 
             if (nJudge == 0)
-                return "NG";
+                return "PICK HISTORY INSERT FAIL";
 
             return "OK";
         }
@@ -473,7 +536,7 @@ namespace AMM
 
             if (nJudge == 0)
             {
-                return "NG";
+                return "PICK HISTORY INSERT FAIL";
             }
 
             return strReturnValue;
@@ -498,13 +561,13 @@ namespace AMM
             int nJudge = MSSql.SetData(queryList1); ///return 확인 해서 false 값 날려 야 함.
 
             if (nJudge == 0)
-                return "NG";
+                return string.Format("PICK LIST({0}) UPDATE FAIL", strReelid);
 
             ////자재 삭제          
             string strJudge = Delete_MTL_Info(strReelid);
 
             if (strJudge == "NG")
-                return "NG";
+                return string.Format("{0} DELETE FAIL", strReelid);
 
             ///////////자재 정보 가져 오기 //TB_PICK_LIST_INFO
             string query = "";
@@ -1248,6 +1311,22 @@ namespace AMM
 
             string strSave;
             strSave = strHead + ',' + strMessage + ',' + strResult;
+            Fnc_WriteFile(strPath, strSave);
+        }
+
+        public void ReturnLogSave(string msg)
+        {
+            System.IO.DirectoryInfo di = new System.IO.DirectoryInfo(@"C:\Log\ReturnLog");
+            if (!di.Exists) { di.Create(); }
+
+            string strPath = "C:\Log\ReturnLog\\";
+            string strToday = string.Format("{0}{1:00}{2:00}", DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day);
+            string strHead = string.Format(",{0:00}:{1:00}:{2:00}", DateTime.Now.Hour, DateTime.Now.Minute, DateTime.Now.Second);
+            strPath = strPath + strToday + "ReturnLog.txt";
+            strHead = strToday + strHead;
+
+            string strSave;
+            strSave = strHead + ',' + msg;
             Fnc_WriteFile(strPath, strSave);
         }
 
