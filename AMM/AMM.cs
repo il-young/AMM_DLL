@@ -270,7 +270,10 @@ namespace AMM
             nReturn = MSSql.SetData(query);
 
             if (nReturn == 0)
-                return "NO DATA";
+            {
+                ReturnLogSave(string.Format("SetEqStatus TB_STATUS_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}", strLinecode, strEquipid));
+                return "TB_STATUS_HISTORY INSERT FAIL";
+            }
 
             ////Skynet////
             if (bConnection)
@@ -308,10 +311,16 @@ namespace AMM
             strType = strType.ToUpper();
 
             if (strLinecode == "")
+            {
+                ReturnLogSave("SetEqStatus2 EMPTY LINECODE");
                 return "EMPTY LINECODE";
+            }
 
             if (strEquipid == "")
+            {
+                ReturnLogSave("SetEqStatus2 EMPTY EQUIP");
                 return "EMPTY EQUIPID";
+            }
 
             string query = "";
             int nReturn = 0;
@@ -326,7 +335,10 @@ namespace AMM
                 nReturn = MSSql.SetData(query);
 
                 if (nReturn == 0)
-                    return "NO DATA";
+                {
+                    ReturnLogSave(string.Format("SetEqStatus2 TB_STATUS UPDATE FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
+                    return "TB_STATUS UPDATE FAIL";
+                }
             }
             else if (nCheck == 0)
             {
@@ -336,12 +348,16 @@ namespace AMM
                 nReturn = MSSql.SetData(query);
 
                 if (nReturn == 0)
-                    return "NO DATA";
+                {
+                    ReturnLogSave(string.Format("SetEqStatus2 TB_STATUS INSERT FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
+                    return "TB_STATUS INSERT FAIL";
+                }
 
             }
             else
             {
-                return "NO EQUIPID";
+                ReturnLogSave(string.Format("SetEqStatus2 EQUIPID CHECK FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
+                return "EQUIPID CHECK FAIL";
             }
 
             /////Log 저장
@@ -351,7 +367,10 @@ namespace AMM
             nReturn = MSSql.SetData(query);
 
             if (nReturn == 0)
-                return "NO DATA";
+            {
+                ReturnLogSave(string.Format("SetEqStatus2 TB_STATUS_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}", strLinecode, strEquipid));
+                return "TB_STATUS_HISTORY INSERT FAIL";
+            }
 
             ////Skynet////
             if (bConnection)
@@ -426,7 +445,10 @@ namespace AMM
             nJudge = MSSql.SetData(queryList2); ///return 확인 해서 false 값 날려 야 함.
 
             if (nJudge == 0)
-                return "PICK HISTORY INSERT FAIL";
+            {
+                ReturnLogSave(string.Format("SetPickingID TB_PICK_ID_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}", strLinecode, strEquipid));
+                return "TB_PICK_ID_HISTORY INSERT FAIL";
+            }
 
             return "OK";
         }
@@ -536,7 +558,8 @@ namespace AMM
 
             if (nJudge == 0)
             {
-                return "PICK HISTORY INSERT FAIL";
+                ReturnLogSave(string.Format("SetUnloadStart TB_PICK_ID_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}", strLinecode, strEquipid));
+                return "TB_PICK_ID_HISTORY INSERT FAIL";
             }
 
             return strReturnValue;
@@ -561,13 +584,19 @@ namespace AMM
             int nJudge = MSSql.SetData(queryList1); ///return 확인 해서 false 값 날려 야 함.
 
             if (nJudge == 0)
-                return string.Format("PICK LIST({0}) UPDATE FAIL", strReelid);
+            {
+                ReturnLogSave(string.Format("SetUnloadOut TB_PICK_LIST_INFO UPDATE FAIL LINECODE : {0}, EQUIPID : {1}, REELID : {2}", strLinecode, strEquipid, strReelid));
+                return "TB_PICK_LIST_INFO UPDATE FAIL";
+            }
 
             ////자재 삭제          
             string strJudge = Delete_MTL_Info(strReelid);
 
             if (strJudge == "NG")
+            {
+                ReturnLogSave(string.Format("SetUnloadOut DELETE FAIL LINECODE : {0}, EQUIPID : {1}, REELID : {2}", strLinecode, strEquipid, strReelid));
                 return string.Format("{0} DELETE FAIL", strReelid);
+            }
 
             ///////////자재 정보 가져 오기 //TB_PICK_LIST_INFO
             string query = "";
@@ -586,7 +615,10 @@ namespace AMM
             nJudge = MSSql.SetData(queryList2); ///return 확인 해서 false 값 날려 야 함.
 
             if (nJudge == 0)
-                return "NG";
+            {
+                ReturnLogSave(string.Format("SetUnloadOut TB_PICK_INOUT_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}, REELID : {2}", strLinecode, strEquipid, strReelid));
+                return "TB_PICK_INOUT_HISTORY INSERT FAIL";
+            }
 
             //////////////IT Webservice////////////
             /////모든 MNBR을 넣어 줘야 함.
@@ -681,13 +713,19 @@ namespace AMM
             int nJudge = MSSql.SetData(queryList); ///return 확인 해서 false 값 날려 야 함.
 
             if (nJudge == 0)
-                return "NG";
+            {
+                ReturnLogSave(string.Format("SetUnloadOut_Manual TB_PICK_INOUT_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}, REELID : {2}", strLinecode, strEquipid, strReelid));
+                return "TB_PICK_INOUT_HISTORY INSERT FAIL";
+            }
 
             ////자재 삭제          
             string strJudge = Delete_MTL_Info(strReelid);
 
             if (strJudge == "NG")
-                return "NG";
+            {
+                ReturnLogSave(string.Format("SetUnloadOut_Manual REEL DELETE FAIL LINECODE : {0}, EQUIPID : {1}, REELID : {2}", strLinecode, strEquipid, strReelid));
+                return "REEL DELETE FAIL";
+            }
 
             //////////////IT Webservice////////////
             /////모든 MNBR을 넣어 줘야 함.
@@ -739,6 +777,7 @@ namespace AMM
                             && strResut.Contains("Enhance Location") != true && strResut.Contains("Already exist") != true)
                         {
                             Skynet_Set_Webservice_Faileddata(strMnbr, "", "CMS_OUT", strReelid, "", dt.Rows[0]["SID"].ToString(), dt.Rows[0]["MANUFACTURER"].ToString(), dt.Rows[0]["LOTID"].ToString(), "", dt.Rows[0]["QTY"].ToString(), "EA", strGroup);
+                            ReturnLogSave(string.Format("SetUnloadOut_Manual CMS_OUT WEBSERVICE FAIL LINECODE : {0}, EQUIPID : {1}, REELID : {2}", strLinecode, strEquipid, strReelid));
                             return "FAILED_WEBSERVICE";
                         }
 
@@ -748,7 +787,7 @@ namespace AMM
                     catch (Exception ex)
                     {
                         Skynet_Set_Webservice_Faileddata(strMnbr, "", "CMS_OUT", strReelid, "", dt.Rows[0]["SID"].ToString(), dt.Rows[0]["MANUFACTURER"].ToString(), dt.Rows[0]["LOTID"].ToString(), "", dt.Rows[0]["QTY"].ToString(), "EA", strGroup);
-
+                        ReturnLogSave(string.Format("SetUnloadOut_Manual CMS_OUT WEBSERVICE EXCEPTION LINECODE : {0}, EQUIPID : {1}, REELID : {2}", strLinecode, strEquipid, strReelid));
                         string strex = ex.ToString();
                         return "FAILED_WEBSERVICE";
                     }
@@ -756,6 +795,7 @@ namespace AMM
                 else
                 {
                     Skynet_Set_Webservice_Faileddata(strMnbr, "", "CMS_OUT", strReelid, "", dt.Rows[0]["SID"].ToString(), dt.Rows[0]["MANUFACTURER"].ToString(), dt.Rows[0]["LOTID"].ToString(), "", dt.Rows[0]["QTY"].ToString(), "EA", strGroup);
+                    ReturnLogSave(string.Format("SetUnloadOut_Manual WEBSERVICE Disconnected LINECODE : {0}, EQUIPID : {1}, REELID : {2}", strLinecode, strEquipid, strReelid));
                 }
             }
 
@@ -795,6 +835,7 @@ namespace AMM
                         && strwebResut.Contains("Enhance Location") != true && strwebResut.Contains("Already exist") != true)
                     {
                         k = nWebCount;
+                        ReturnLogSave(string.Format("SetFailedWebservicedata WEBSERVICE FAIL EQUIPID : {0}", strEquipid));
                         return "FAILED_WEBSERVICE";
                     }
                     else
@@ -840,7 +881,8 @@ namespace AMM
 
             if (nJudge == 0)
             {
-                return "NG";
+                ReturnLogSave(string.Format("SetUnloadEnd TB_PICK_ID_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}, PICKINGID : {2}", strLinecode, strEquipid, strPickingid));
+                return "TB_PICK_ID_HISTORY INSERT FAIL";
             }
 
             /////PickID delete
@@ -851,7 +893,8 @@ namespace AMM
 
             if (nJudge == 0)
             {
-                return "NG";
+                ReturnLogSave(string.Format("SetUnloadEnd TB_PICK_ID_INFO DELETE FAIL LINECODE : {0}, EQUIPID : {1}, PICKINGID : {2}", strLinecode, strEquipid, strPickingid));
+                return "TB_PICK_ID_INFO DELETE FAIL";
             }
 
             /////PickList delete
@@ -862,7 +905,8 @@ namespace AMM
 
             if (nJudge == 0)
             {
-                return "NG";
+                ReturnLogSave(string.Format("SetUnloadEnd TB_PICK_LIST_INFO DELETE FAIL LINECODE : {0}, EQUIPID : {1}, PICKINGID : {2}", strLinecode, strEquipid, strPickingid));
+                return "TB_PICK_LIST_INFO DELETE FAIL";
             }
 
             return "OK";
@@ -913,7 +957,10 @@ namespace AMM
             int nJudge = MSSql.SetData(queryList1); ///return 확인 해서 false 값 날려 야 함.
 
             if (nJudge == 0)
-                return "NG";
+            {
+                ReturnLogSave(string.Format("SetLoadComplete TB_MTL_INFO INSERT FAIL LINECODE : {0}, EQUIPID : {1}, BARCODEINFO : {2}", strLinecode, strEquipid, strBcrinfo));
+                return "TB_MTL_INFO INSERT FAIL";
+            }
 
             //////////로그 저장 ///TB_PICK_INOUT_HISTORY
             List<string> queryList2 = new List<string>();
@@ -925,7 +972,10 @@ namespace AMM
             nJudge = MSSql.SetData(queryList2); ///return 확인 해서 false 값 날려 야 함.
 
             if (nJudge == 0)
-                return "NG";
+            {
+                ReturnLogSave(string.Format("SetLoadComplete TB_PICK_INOUT_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}, BARCODEINFO : {2}", strLinecode, strEquipid, strBcrinfo));
+                return "TB_PICK_INOUT_HISTORY INSERT FAIL";
+            }
 
             ///////////IT Webservice////////////
             /////모든 MNBR을 넣어 줘야 함.
@@ -994,6 +1044,7 @@ namespace AMM
                     {
                         Skynet_Set_Webservice_Faileddata(strMnbr, "", "CMS_IN", strInfo[1], "", strInfo[2], strInfo[5], strInfo[3], "", strInfo[4], "EA", strGroup);
                         string strex = ex.ToString();
+                        ReturnLogSave(string.Format("SetLoadComplete WEBSERVICE EXCEPTION LINECODE : {0}, EQUIPID : {1}, BARCODEINFO : {2}", strLinecode, strEquipid, strBcrinfo));
                         return "FAILED_WEBSERVICE";
                     }
                 }
@@ -1003,6 +1054,7 @@ namespace AMM
 
                     if (nJudge2 == 0)
                     {
+                        ReturnLogSave(string.Format("SetLoadComplete WERBSERVICE Disconnected LINECODE : {0}, EQUIPID : {1}, BARCODEINFO : {2}", strLinecode, strEquipid, strBcrinfo));
                         strReturn = "NG";
                         return strReturn;
                     }
@@ -1045,8 +1097,10 @@ namespace AMM
             int nJudge = MSSql.SetData(query); ///return 확인 해서 false 값 날려 야 함.
 
             if (nJudge == 0)
-                return "NG";
-
+            {
+                ReturnLogSave(string.Format("SetSortComplete TB_PICK_INOUT_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}, BARCODEINFO : {2}", strLinecode, strEquipid, strBcrinfo));
+                return "TB_PICK_INOUT_HISTORY INSERT FAIL";
+            }
             ///////////IT Webservice////////////
             /////모든 MNBR을 넣어 줘야 함.
             string strMnbr = "", strResut = "", strGroup = "";
@@ -1072,19 +1126,22 @@ namespace AMM
                             && strResut.Contains("Enhance Location") != true && strResut.Contains("Already exist") != true)
                         {
                             Skynet_Set_Webservice_Faileddata(strMnbr, "", "CMS_IN", strInfo[1], "", strInfo[2], strInfo[5], strInfo[3], "", strInfo[4], "EA", strGroup);
+                            ReturnLogSave(string.Format("SetSortComplete WEBSERVICE CMS_IN FAIL LINECODE : {0}, EQUIPID : {1}, BARCODEINFO : {2}", strLinecode, strEquipid, strBcrinfo));
                             strReturn = "FAILED_WEBSERVICE";
                             return strReturn;
                         }
 
                         string str = SetFailedWebservicedata(strEquipid);
+
+                        ReturnLogSave(string.Format("SetSortComplete WEBSERVICE CMS_IN RETURN_VALUE : {3}, LINECODE : {0}, EQUIPID : {1}, BARCODEINFO : {2}", strLinecode, strEquipid, strBcrinfo, str));
                         strReturn = str;
 
                         return strReturn;
                     }
                     catch (Exception ex)
                     {
-                        Skynet_Set_Webservice_Faileddata(strMnbr, "", "CMS_IN", strInfo[1], "", strInfo[2], strInfo[5], strInfo[3], "", strInfo[4], "EA", strGroup);
-                        string strex = ex.ToString();
+                        Skynet_Set_Webservice_Faileddata(strMnbr, "", "CMS_IN", strInfo[1], "", strInfo[2], strInfo[5], strInfo[3], "", strInfo[4], "EA", strGroup);                        
+                        ReturnLogSave(string.Format("SetSortComplete WEBSERVICE CMS_IN EXCEPTION LINECODE : {0}, EQUIPID : {1}, BARCODEINFO : {2}, EXECPTION_CODE : {3}", strLinecode, strEquipid, strBcrinfo, ex.Message));
                         return "FAILED_WEBSERVICE";
                     }
                 }
@@ -1095,6 +1152,7 @@ namespace AMM
                     if (nJudge2 == 0)
                     {
                         strReturn = "NG";
+                        ReturnLogSave(string.Format("SetLoadComplete WERBSERVICE Disconnected LINECODE : {0}, EQUIPID : {1}, BARCODEINFO : {2}", strLinecode, strEquipid, strBcrinfo));
                         return strReturn;
                     }
                 }
@@ -1148,7 +1206,10 @@ namespace AMM
             int nJudge = MSSql.SetData(query); ///return 확인 해서 false 값 날려 야 함.
 
             if (nJudge == 0)
-                return "NG";
+            {
+                ReturnLogSave(string.Format("SetSortComplete TB_PICK_INOUT_HISTORY INSERT FAIL BARCODEINFO : {0}", strBcrinfo));
+                return "TB_PICK_INOUT_HISTORY INSERT FAIL";
+            }
 
             ///////////IT Webservice////////////
             /////모든 MNBR을 넣어 줘야 함.
@@ -1177,11 +1238,14 @@ namespace AMM
                         {
                             Skynet_Set_Webservice_Faileddata(strMnbr, strCreator, "CMS_IN", strInfo[1], "", strInfo[2], strInfo[5], strInfo[3], "", strInfo[4], "EA", strGroup);
                             strReturn = "FAILED_WEBSERVICE";
+                            ReturnLogSave(string.Format("SetSortComplete WEBSERVICE CMS_IN BARCODEINFO : {0}", strBcrinfo));
                             return strReturn;
                         }
 
                         string str = SetFailedWebservicedata(info.equipid);
                         strReturn = str;
+
+                        ReturnLogSave(string.Format("SetSortComplete WEBSERVICE CMS_IN RETURN_VALUE : {0}, BARCODEINFO : {1}", str, strBcrinfo));
 
                         return strReturn;
                     }
@@ -1189,6 +1253,7 @@ namespace AMM
                     {
                         Skynet_Set_Webservice_Faileddata(strMnbr, strCreator, "CMS_IN", strInfo[1], "", strInfo[2], strInfo[5], strInfo[3], "", strInfo[4], "EA", strGroup);
                         string strex = ex.ToString();
+                        ReturnLogSave(string.Format("SetSortComplete WEBSERVICE CMS_IN EXCEPTION BARCODEINFO : {0}, EXECPTION_CODE : {1}", strBcrinfo, ex.Message));
                         return "FAILED_WEBSERVICE";
                     }
                 }
@@ -1198,6 +1263,7 @@ namespace AMM
 
                     if (nJudge2 == 0)
                     {
+                        ReturnLogSave(string.Format("SetSortComplete WERBSERVICE Disconnected BARCODEINFO : {0}", strBcrinfo));
                         strReturn = "NG";
                         return strReturn;
                     }
@@ -1217,7 +1283,10 @@ namespace AMM
             DataTable dt = MSSql.GetData(query);
 
             if (dt.Rows.Count < 1)
+            {
+                ReturnLogSave(string.Format("Get_Sid_Location NO DATA SID# : {0}", sid));
                 return "NO_DATA";
+            }
 
             List<int> list = new List<int>();
 
@@ -1319,7 +1388,7 @@ namespace AMM
             System.IO.DirectoryInfo di = new System.IO.DirectoryInfo(@"C:\Log\ReturnLog");
             if (!di.Exists) { di.Create(); }
 
-            string strPath = "C:\Log\ReturnLog\\";
+            string strPath = "C:\\Log\\ReturnLog\\";
             string strToday = string.Format("{0}{1:00}{2:00}", DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day);
             string strHead = string.Format(",{0:00}:{1:00}:{2:00}", DateTime.Now.Hour, DateTime.Now.Minute, DateTime.Now.Second);
             strPath = strPath + strToday + "ReturnLog.txt";
@@ -1381,7 +1450,10 @@ namespace AMM
             int nJudge = MSSql.SetData(queryList1); ///return 확인 해서 false 값 날려 야 함.
 
             if (nJudge == 0)
-                return "NG";
+            {
+                ReturnLogSave(string.Format("SetPickIDNo TB_IDNUNMER_INFO INSERT FAIL LINECODE : {0}, EQUIPID : {1}, PREFIX : {2}, NUMBER : {3}", strLinecode, strEquipid, strPrefix, strNumber));
+                return "TB_IDNUNMER_INFO INSERT FAIL";
+            }
 
             return "OK";
         }
@@ -1399,7 +1471,10 @@ namespace AMM
             int nJudge = MSSql.SetData(query); ///return 확인 해서 false 값 날려 야 함.
 
             if (nJudge == 0)
-                return "NG";
+            {
+                ReturnLogSave(string.Format("SetPickIDNo TB_IDNUNMER_INFO UPDATE FAIL LINECODE : {0}, EQUIPID : {1}, NUMBER : {2}", strLinecode, strEquipid, strNumber));
+                return "TB_IDNUNMER_INFO UPDATE FAIL";
+            }
 
             return "OK";
         }
@@ -1529,7 +1604,10 @@ namespace AMM
             int nJudge = MSSql.SetData(queryList1); ///return 확인 해서 false 값 날려 야 함.
 
             if (nJudge == 0)
-                return "NG";
+            {
+                ReturnLogSave(string.Format("SetEqEvent TB_EVENT_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}, ERRORTYPE : {2}", strLinecode, strEquipid, strErrortype));
+                return "TB_EVENT_HISTORY INSERT FAIL";
+            }
 
             ////Skynet////
             if (bConnection)
@@ -1568,7 +1646,10 @@ namespace AMM
             int nJudge = MSSql.SetData(queryList); ///return 확인 해서 false 값 날려 야 함.
 
             if (nJudge == 0)
-                return "NG";
+            {
+                ReturnLogSave(string.Format("SetEquipmentInfo TB_SET_EQUIP INSERT FAIL LINECODE : {0}, EQUIPID : {1}, INDEX : {2}", strLinecode, strEquipid, strIndex));
+                return "TB_SET_EQUIP INSERT FAIL";
+            }
 
             return "OK";
         }
@@ -1619,7 +1700,10 @@ namespace AMM
             int nJudge = MSSql.SetData(queryList); ///return 확인 해서 false 값 날려 야 함.
 
             if (nJudge == 0)
-                return "NG";
+            {
+                ReturnLogSave(string.Format("SetPicking_Readyinfo TB_PICK_READY_INFO INSERT FAIL LINECODE : {0}, EQUIPID : {1}, PICKID : {2}", strLinecode, strEquipid, strPickid));
+                return "TB_PICK_READY_INFO INSERT FAIL";
+            }
 
             return "OK";
         }
@@ -1648,7 +1732,10 @@ namespace AMM
             int nJudge = MSSql.SetData(queryList); ///return 확인 해서 false 값 날려 야 함.
 
             if (nJudge == 0)
-                return "NG";
+            {
+                ReturnLogSave(string.Format("SetPicking_Listinfo TB_PICK_LIST_INFO INSERT FAIL LINECODE : {0}, EQUIPID : {1}, PICKID : {2}", strLinecode, strEquipid, strPickid));
+                return "TB_PICK_LIST_INFO INSERT FAIL";
+            }
 
             return "OK";
         }
@@ -1705,11 +1792,15 @@ namespace AMM
 
             if (dt.Rows.Count == 0)
             {
+                ReturnLogSave(string.Format("GetPickingListinfo TB_PICK_LIST_INFO SELECT FAIL UID : {0}", uid));
                 return "ERROR";
             }
 
             if (dt.Rows[0]["CNT"].ToString() == "99")
+            {
+                ReturnLogSave(string.Format("GetPickingListinfo TB_PICK_LIST_INFO CNT = 99 UID : {0}", uid));
                 return "NG";
+            }
             else
                 return "OK";
         }
@@ -1723,11 +1814,15 @@ namespace AMM
 
             if (dt.Rows.Count == 0)
             {
+                ReturnLogSave(string.Format("GetPickingReadyinfo TB_PICK_READY_INFO SELECT FAIL UID : {0}", uid));
                 return "ERROR";
             }
 
             if (dt.Rows[0]["CNT"].ToString() == "99")
-                return "NG";
+            {
+                ReturnLogSave(string.Format("GetPickingReadyinfo TB_PICK_READY_INFO CNT = 99 UID : {0}", uid));
+                return "TB_PICK_READY_INFO CNT = 99";
+            }
             else
                 return "OK";
         }
@@ -1761,7 +1856,10 @@ namespace AMM
             string str = Delete_UserInfo(sid);
 
             if (str == "NG")
-                return str;
+            {
+                ReturnLogSave(string.Format("SetUserInfo TB_USER_INFO DELETE FAIL UID : {0}", sid));
+                return "TB_USER_INFO DELETE FAIL";// str;
+            }
 
             string query = "";
 
@@ -1771,7 +1869,10 @@ namespace AMM
             int nJudge = MSSql.SetData(queryList); ///return 확인 해서 false 값 날려 야 함.
 
             if (nJudge == 0)
-                return "NG";
+            {
+                ReturnLogSave(string.Format("SetUserInfo TB_USER_INFO INSERT FAIL UID : {0}", sid));
+                return "TB_USER_INFO INSERT FAIL";
+            }
 
             return "OK";
         }
@@ -1882,7 +1983,10 @@ namespace AMM
             int nJudge = MSSql.SetData(query);
 
             if (nJudge == 0)
-                return "NG";
+            {
+                ReturnLogSave(string.Format("Delete_EquipmentInfo2 TB_SET_EQUIP DELETE FAIL LINECODE : {0}, EQUIPID : {1}", strLinecode, strEquipid));
+                return "TB_SET_EQUIP DELETE FAIL";
+            }
 
             return "OK";
         }
@@ -1896,7 +2000,10 @@ namespace AMM
             int nJudge = MSSql.SetData(query);
 
             if (nJudge == 0)
-                return "NG";
+            {
+                ReturnLogSave(string.Format("Delete_PickReadyinfo TB_PICK_READY_INFO DELETE FAIL LINECODE : {0}, PICKID : {1}", strLinecode, strPickid));
+                return "TB_PICK_READY_INFO DELETE FAIL";
+            }
 
             return "OK";
         }
@@ -1910,7 +2017,10 @@ namespace AMM
             int nJudge = MSSql.SetData(query);
 
             if (nJudge == 0)
-                return "NG";
+            {
+                ReturnLogSave(string.Format("Delete_PickReadyinfo_ReelID TB_PICK_READY_INFO DELETE FAIL LINECODE : {0}, REELID : {1}", strLinecode, strReelid));
+                return "TB_PICK_READY_INFO DELETE FAIL";
+            }
 
             return "OK";
         }
@@ -1924,7 +2034,10 @@ namespace AMM
             int nJudge = MSSql.SetData(query);
 
             if (nJudge == 0)
-                return "NG";
+            {
+                ReturnLogSave(string.Format("Delete_Picklistinfo_Reelid TB_PICK_LIST_INFO DELETE FAIL LINECODE : {0}, REELID : {1}", strLinecode, strReelid));
+                return "TB_PICK_LIST_INFO DELETE FAIL";
+            }
 
             return "OK";
         }
@@ -1970,7 +2083,10 @@ namespace AMM
             int nJudge = MSSql.SetData(query);
 
             if (nJudge == 0)
-                return "NG";
+            {
+                ReturnLogSave(string.Format("Delete_PickIDNo TB_IDNUNMER_INFO DELETE FAIL LINECODE : {0}, EQUIPID : {1}", strLinecode, strEquipid));
+                return "TB_IDNUNMER_INFO DELETE FAIL";
+            }
 
             return "OK";
         }
@@ -2037,7 +2153,10 @@ namespace AMM
             int nJudge = MSSql.SetData(query);
 
             if (nJudge == 0)
-                return "NG";
+            {
+                ReturnLogSave(string.Format("Delete_MTL_Tower TB_MTL_INFO DELETE FAIL EQUIPID : {1}", strEqid));
+                return "TB_MTL_INFO DELETE FAIL";
+            }
 
             return "OK";
         }
@@ -2064,7 +2183,10 @@ namespace AMM
             int nJudge = MSSql.SetData(queryList1);
 
             if (nJudge == 0)
-                return "NG";
+            {
+                ReturnLogSave(string.Format("User_Register TB_USER_INFO INSERT FAIL SID : {0}", sid));
+                return "TB_USER_INFO INSERT FAIL";
+            }
 
             return "OK";
         }
@@ -2116,7 +2238,10 @@ namespace AMM
             int nJudge = MSSql.SetData(queryList1);
 
             if (nJudge == 0)
-                return "NG";
+            {
+                ReturnLogSave(string.Format("Set_Twr_Use TB_TOWER_USE INSERT FAIL TOWER : {0}, USER : {1}", strTower, strUse));
+                return "TB_TOWER_USE INSERT FAIL";
+            }
 
             return "OK";
         }
@@ -2161,26 +2286,26 @@ namespace AMM
         {
             string query = "";
             query = string.Format(@"select A.*, B.INCH_7_CAPA, B.INCH_13_CAPA
-, convert(decimal(10, 2), ((A.INCH_7_CNT / B.INCH_7_CAPA) * 100)) as INCH_7_LOAD_RATE
-, convert(decimal(10, 2), ((A.INCH_13_CNT / B.INCH_13_CAPA) * 100)) as INCH_13_LOAD_RATE
-from
-(
-select EQUIP_ID
-, sum(INCH_7) as INCH_7_CNT, sum(INCH_13) as INCH_13_CNT
-from
-(
-select *
-, case when INCH_INFO = '7' then 1 else 0 end as INCH_7
-, case when INCH_INFO = '13' then 1 else 0 end as INCH_13
-from TB_MTL_INFO with(nolock)
-where 1=1
---and EQUIP_ID = 'TWR1'
-) T
-group by EQUIP_ID
-) A 
-left outer join TB_TOWER_CAPA B with(nolock)
-on A.EQUIP_ID = B.EQUIP_ID
-order by EQUIP_ID");
+                , convert(decimal(10, 2), ((A.INCH_7_CNT / B.INCH_7_CAPA) * 100)) as INCH_7_LOAD_RATE
+                , convert(decimal(10, 2), ((A.INCH_13_CNT / B.INCH_13_CAPA) * 100)) as INCH_13_LOAD_RATE
+                from
+                (
+                select EQUIP_ID
+                , sum(INCH_7) as INCH_7_CNT, sum(INCH_13) as INCH_13_CNT
+                from
+                (
+                select *
+                , case when INCH_INFO = '7' then 1 else 0 end as INCH_7
+                , case when INCH_INFO = '13' then 1 else 0 end as INCH_13
+                from TB_MTL_INFO with(nolock)
+                where 1=1
+                --and EQUIP_ID = 'TWR1'
+                ) T
+                group by EQUIP_ID
+                ) A 
+                left outer join TB_TOWER_CAPA B with(nolock)
+                on A.EQUIP_ID = B.EQUIP_ID
+                order by EQUIP_ID");
 
             DataTable dt = MSSql.GetData(query);
 
@@ -2202,7 +2327,8 @@ order by EQUIP_ID");
 
             if (nCount == 0)
             {
-                return "NG";
+                ReturnLogSave(string.Format("Check_LT_User TB_USER_INFO_LT NO DATA SID : {0}", SID));
+                return "NO DATA";
             }
 
             return "OK";
@@ -2230,7 +2356,10 @@ order by EQUIP_ID");
             int nJudge = MSSql.SetData(query1);
 
             if (nJudge == 0)
-                return "NG";
+            {
+                ReturnLogSave(string.Format("Set_Twr_State TB_TOWER_STATE INSERT FAIL LINECODE : {0}, EQUIPID : {1} ", strLinecode, strEqid));
+                return "TB_TOWER_STATE INSERT FAIL";
+            }
 
             return "OK";
         }
