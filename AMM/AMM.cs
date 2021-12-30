@@ -604,6 +604,8 @@ namespace AMM
             query = string.Format(@"SELECT * FROM TB_PICK_LIST_INFO WHERE LINE_CODE='{0}' and EQUIP_ID='{1}' and UID='{2}'", strLinecode, strEquipid, strReelid);
             DataTable dt = MSSql.GetData(query);
 
+            DeleteHistory();
+
             //////////로그 저장 ///TB_PICK_INOUT_HISTORY
             List<string> queryList2 = new List<string>();
             query2 = string.Format(@"INSERT INTO TB_PICK_INOUT_HISTORY (DATETIME,LINE_CODE,EQUIP_ID,PICKID,UID,STATUS,REQUESTOR,TOWER_NO,SID,LOTID,QTY,MANUFACTURER,PRODUCTION_DATE,INCH_INFO,INPUT_TYPE,ORDER_TYPE) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}','{11}','{12}','{13}','{14}','{15}')",
@@ -619,7 +621,7 @@ namespace AMM
                 ReturnLogSave(string.Format("SetUnloadOut TB_PICK_INOUT_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}, REELID : {2}", strLinecode, strEquipid, strReelid));
                 return "TB_PICK_INOUT_HISTORY INSERT FAIL";
             }
-
+            
             //////////////IT Webservice////////////
             /////모든 MNBR을 넣어 줘야 함.
             string strMnbr = "", strResut = "", strTwrno = "", strGroup = "";
@@ -702,6 +704,8 @@ namespace AMM
 
             query = string.Format(@"SELECT * FROM TB_MTL_INFO WHERE LINE_CODE='{0}' and EQUIP_ID='{1}' and UID='{2}'", strLinecode, strEquipid, strReelid);
             DataTable dt = MSSql.GetData(query);
+
+            DeleteHistory();
 
             //////////로그 저장 ///TB_PICK_INOUT_HISTORY
             query2 = string.Format(@"INSERT INTO TB_PICK_INOUT_HISTORY (DATETIME,LINE_CODE,EQUIP_ID,PICKID,UID,STATUS,REQUESTOR,TOWER_NO,SID,LOTID,QTY,MANUFACTURER,PRODUCTION_DATE,INCH_INFO,INPUT_TYPE) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}','{11}','{12}','{13}','{14}')",
@@ -962,6 +966,8 @@ namespace AMM
                 return "TB_MTL_INFO INSERT FAIL";
             }
 
+            DeleteHistory();
+
             //////////로그 저장 ///TB_PICK_INOUT_HISTORY
             List<string> queryList2 = new List<string>();
             query3 = string.Format(@"INSERT INTO TB_PICK_INOUT_HISTORY (DATETIME,LINE_CODE,EQUIP_ID,PICKID,UID,STATUS,REQUESTOR,TOWER_NO,SID,LOTID,QTY,MANUFACTURER,PRODUCTION_DATE,INCH_INFO,INPUT_TYPE) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}','{11}','{12}','{13}','{14}')",
@@ -1087,6 +1093,8 @@ namespace AMM
 
             string query = "";
 
+            DeleteHistory();
+
             //////3. DB 저장
             string strSendtime = string.Format("{0}{1:00}{2:00}{3:00}{4:00}{5:00}", DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, DateTime.Now.Hour, DateTime.Now.Minute, DateTime.Now.Second);
 
@@ -1195,6 +1203,8 @@ namespace AMM
             }
 
             string query = "";
+
+            DeleteHistory();
 
             //////3. DB 저장
             string strSendtime = string.Format("{0}{1:00}{2:00}{3:00}{4:00}{5:00}", DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, DateTime.Now.Hour, DateTime.Now.Minute, DateTime.Now.Second);
@@ -1390,12 +1400,12 @@ namespace AMM
 
             string strPath = "C:\\Log\\ReturnLog\\";
             string strToday = string.Format("{0}{1:00}{2:00}", DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day);
-            string strHead = string.Format(",{0:00}:{1:00}:{2:00}", DateTime.Now.Hour, DateTime.Now.Minute, DateTime.Now.Second);
+            string strHead = string.Format(" {0:00}:{1:00}:{2:00}] ", DateTime.Now.Hour, DateTime.Now.Minute, DateTime.Now.Second);
             strPath = strPath + strToday + "ReturnLog.txt";
             strHead = strToday + strHead;
 
             string strSave;
-            strSave = strHead + ',' + msg;
+            strSave = strHead + msg;
             Fnc_WriteFile(strPath, strSave);
         }
 
@@ -2154,7 +2164,7 @@ namespace AMM
 
             if (nJudge == 0)
             {
-                ReturnLogSave(string.Format("Delete_MTL_Tower TB_MTL_INFO DELETE FAIL EQUIPID : {1}", strEqid));
+                ReturnLogSave(string.Format("Delete_MTL_Tower TB_MTL_INFO DELETE FAIL EQUIPID : {0}", strEqid));
                 return "TB_MTL_INFO DELETE FAIL";
             }
 
@@ -2890,6 +2900,17 @@ namespace AMM
             query = string.Format("DELETE FROM Skynet.dbo.TB_WEBSERVICE_STB WHERE REEL_ID='{0}'", strReelid);
 
             int nJudge = MSSql.SetData(query);
+
+            return nJudge;
+        }
+
+        /// <summary>
+        /// 6개월 전 History 삭제
+        /// </summary>
+        /// <returns></returns>
+        private int DeleteHistory()
+        {
+            int nJudge = MSSql.SetData("delete from  [ATK4-AMM-DBv1].dbo.TB_PICK_INOUT_HISTORY where 1=1 and [DATETIME] <  REPLACE(REPLACE(REPLACE(CONVERT(varchar, dateadd(month, -6, getdate()), 20), '-', ''), ' ', ''), ':', '')");
 
             return nJudge;
         }
