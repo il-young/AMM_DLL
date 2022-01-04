@@ -133,6 +133,20 @@ namespace AMM
             return "OK";
         }
 
+        public int SetEqAlive(string Linecode, string strEquipid, int nAlive)
+        {
+            string sql = string.Format("update TB_STATUS set ALIVE={0} where LINE_CODE='{1}' and EQUIP_ID='{2}'", nAlive, Linecode, strEquipid);
+            int nReturn = MSSql.SetData(sql);
+
+            if (nReturn == 0)
+            {
+                ReturnLogSave(string.Format("SetEqAlive TB_STATUS UPDATE FAIL LINECODE : {0}, EQUIPID : {1}", Linecode, strEquipid));
+                return 0;
+            }           
+
+            return nReturn;
+        }
+
         public string SetEqEnd(string strLinecode, string strEquipid)
         {
             string strSendtime = string.Format("{0}{1:00}{2:00}{3:00}{4:00}{5:00}", DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, DateTime.Now.Hour, DateTime.Now.Minute, DateTime.Now.Second);
