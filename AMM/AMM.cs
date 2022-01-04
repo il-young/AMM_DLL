@@ -141,10 +141,14 @@ namespace AMM
             if (nReturn == 0)
             {
                 ReturnLogSave(string.Format("SetEqAlive TB_STATUS UPDATE FAIL LINECODE : {0}, EQUIPID : {1}", Linecode, strEquipid));
-                return 0;
-            }           
+            }
 
-            return nReturn;
+            if (!this.bConnection)
+                return nReturn;
+
+            this.Skynet_SM_Alive(Linecode, "1760", strEquipid, nAlive);
+
+            return nReturn;            
         }
 
         public string SetEqEnd(string strLinecode, string strEquipid)
