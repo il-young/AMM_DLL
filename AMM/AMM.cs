@@ -18,7 +18,7 @@ namespace AMM
 
             public void init()
             {
-                Quary = "";
+                Query = "";
                 retry_cnt = 0;
             }
 
@@ -33,6 +33,18 @@ namespace AMM
 
         private static Queue<sql_cmd> SQL_Q = new Queue<sql_cmd>();
         private System.Threading.Thread DBThread;
+
+
+        private void AddSqlQuery(string query)
+        {
+            sql_cmd temp = new sql_cmd();
+
+            temp.retry_cnt = 0;
+            temp.Query = query;
+
+            SQL_Q.Enqueue(temp);
+        }
+
 
         private void DBThread_Start()
         {
@@ -148,7 +160,7 @@ namespace AMM
                 if (nReturn == 0)
                 {
                     ReturnLogSave(string.Format("SetEqStart TB_STATUS UPDATE FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
-                    SQL_Q.Enqueue(query);
+                    AddSqlQuery(query);
                     return "TB_STATUS UPDATE FAIL";
                 }
             }
@@ -161,7 +173,7 @@ namespace AMM
 
                 if (nReturn == 0)
                 {
-                    SQL_Q.Enqueue(query);
+                    AddSqlQuery(query);
                     ReturnLogSave(string.Format("SetEqStart TB_STATUS INSERT FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
                     return "TB_STATUS INSERT FAIL";
                 }
@@ -180,7 +192,7 @@ namespace AMM
 
             if (nReturn == 0)
             {
-                SQL_Q.Enqueue(query);
+                AddSqlQuery(query);
                 ReturnLogSave(string.Format("SetEqStart TB_STATUS_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}", strLinecode, strEquipid));
                 return "TB_STATUS_HISTORY INSERT FAIL";
             }
@@ -201,7 +213,7 @@ namespace AMM
 
             if (nReturn == 0)
             {
-                SQL_Q.Enqueue(sql);
+                AddSqlQuery(sql);
                 ReturnLogSave(string.Format("SetEqAlive TB_STATUS UPDATE FAIL LINECODE : {0}, EQUIPID : {1}", Linecode, strEquipid));
             }
 
@@ -243,7 +255,7 @@ namespace AMM
 
                 if (nReturn == 0)
                 {
-                    SQL_Q.Enqueue(query);
+                    AddSqlQuery(query);
                     ReturnLogSave(string.Format("SetEqEnd TB_STATUS UPDATE FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
                     return "TB_STATUS UPDATE FAIL";
                 }
@@ -257,7 +269,7 @@ namespace AMM
 
                 if (nReturn == 0)
                 {
-                    SQL_Q.Enqueue(query);
+                    AddSqlQuery(query);
                     ReturnLogSave(string.Format("SetEqEnd TB_STATUS INSERT FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
                     return "TB_STATUS INSERT FAIL";
                 }
@@ -276,7 +288,7 @@ namespace AMM
 
             if (nReturn == 0)
             {
-                SQL_Q.Enqueue(query);
+                AddSqlQuery(query);
                 ReturnLogSave(string.Format("SetEqEnd TB_STATUS_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
                 return "TB_STATUS_HISTORY INSERT FAIL";
             }
@@ -323,7 +335,7 @@ namespace AMM
 
                 if (nReturn == 0)
                 {
-                    SQL_Q.Enqueue(query);
+                    AddSqlQuery(query);
                     ReturnLogSave(string.Format("SetEqStatus TB_STATUS UPDATE FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
                     return "TB_STATUS UPDATE FAIL";
                 }
@@ -337,7 +349,7 @@ namespace AMM
 
                 if (nReturn == 0)
                 {
-                    SQL_Q.Enqueue(query);
+                    AddSqlQuery(query);
                     ReturnLogSave(string.Format("SetEqStatus TB_STATUS INSERT FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
                     return "TB_STATUS INSERT FAIL";
                 }
@@ -356,7 +368,7 @@ namespace AMM
 
             if (nReturn == 0)
             {
-                SQL_Q.Enqueue(query);
+                AddSqlQuery(query);
                 ReturnLogSave(string.Format("SetEqStatus TB_STATUS_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}", strLinecode, strEquipid));
                 return "TB_STATUS_HISTORY INSERT FAIL";
             }
@@ -422,7 +434,7 @@ namespace AMM
 
                 if (nReturn == 0)
                 {
-                    SQL_Q.Enqueue(query);
+                    AddSqlQuery(query);
                     ReturnLogSave(string.Format("SetEqStatus2 TB_STATUS UPDATE FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
                     return "TB_STATUS UPDATE FAIL";
                 }
@@ -436,7 +448,7 @@ namespace AMM
 
                 if (nReturn == 0)
                 {
-                    SQL_Q.Enqueue(query);
+                    AddSqlQuery(query);
                     ReturnLogSave(string.Format("SetEqStatus2 TB_STATUS INSERT FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
                     return "TB_STATUS INSERT FAIL";
                 }
@@ -456,7 +468,7 @@ namespace AMM
 
             if (nReturn == 0)
             {
-                SQL_Q.Enqueue(query);
+                AddSqlQuery(query);
                 ReturnLogSave(string.Format("SetEqStatus2 TB_STATUS_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}", strLinecode, strEquipid));
                 return "TB_STATUS_HISTORY INSERT FAIL";
             }
@@ -521,7 +533,7 @@ namespace AMM
 
             if (nJudge == 0)
             {
-                SQL_Q.Enqueue(query1);
+                AddSqlQuery(query1);
                 ReturnLogSave(string.Format("SetPickingID TB_PICK_ID_INFO INSERT FAIL LINECODE : {0}, EQUIPID : {1}", strLinecode, strEquipid));
                 return "PICK ID INSERT FAIL";
             }
@@ -539,7 +551,7 @@ namespace AMM
 
             if (nJudge == 0)
             {
-                SQL_Q.Enqueue(query2);
+                AddSqlQuery(query2);
                 ReturnLogSave(string.Format("SetPickingID TB_PICK_ID_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}", strLinecode, strEquipid));
                 return "TB_PICK_ID_HISTORY INSERT FAIL";
             }
@@ -652,7 +664,7 @@ namespace AMM
 
             if (nJudge == 0)
             {
-                SQL_Q.Enqueue(query2);
+                AddSqlQuery(query2);
                 ReturnLogSave(string.Format("SetUnloadStart TB_PICK_ID_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}", strLinecode, strEquipid));
                 return "TB_PICK_ID_HISTORY INSERT FAIL";
             }
@@ -680,7 +692,7 @@ namespace AMM
 
             if (nJudge == 0)
             {
-                SQL_Q.Enqueue(query1);
+                AddSqlQuery(query1);
                 ReturnLogSave(string.Format("SetUnloadOut TB_PICK_LIST_INFO UPDATE FAIL LINECODE : {0}, EQUIPID : {1}, REELID : {2}", strLinecode, strEquipid, strReelid));
                 return "TB_PICK_LIST_INFO UPDATE FAIL";
             }
@@ -717,7 +729,7 @@ namespace AMM
 
                 if (nJudge == 0)
                 {
-                    SQL_Q.Enqueue(query2);
+                    AddSqlQuery(query2);
                     ReturnLogSave(string.Format("SetUnloadOut TB_PICK_INOUT_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}, REELID : {2}", strLinecode, strEquipid, strReelid));
                     return "TB_PICK_INOUT_HISTORY INSERT FAIL";
                 }
@@ -824,7 +836,7 @@ namespace AMM
 
             if (nJudge == 0)
             {
-                SQL_Q.Enqueue(query2);
+                AddSqlQuery(query2);
                 ReturnLogSave(string.Format("SetUnloadOut_Manual TB_PICK_INOUT_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}, REELID : {2}", strLinecode, strEquipid, strReelid));
                 return "TB_PICK_INOUT_HISTORY INSERT FAIL";
             }
@@ -992,7 +1004,7 @@ namespace AMM
 
             if (nJudge == 0)
             {
-                SQL_Q.Enqueue(query2);
+                AddSqlQuery(query2);
                 ReturnLogSave(string.Format("SetUnloadEnd TB_PICK_ID_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}, PICKINGID : {2}", strLinecode, strEquipid, strPickingid));
                 return "TB_PICK_ID_HISTORY INSERT FAIL";
             }
@@ -1070,7 +1082,7 @@ namespace AMM
 
             if (nJudge == 0)
             {
-                SQL_Q.Enqueue(query2);
+                AddSqlQuery(query2);
                 ReturnLogSave(string.Format("SetLoadComplete TB_MTL_INFO INSERT FAIL LINECODE : {0}, EQUIPID : {1}, BARCODEINFO : {2}", strLinecode, strEquipid, strBcrinfo));
                 return "TB_MTL_INFO INSERT FAIL";
             }
@@ -1088,7 +1100,7 @@ namespace AMM
 
             if (nJudge == 0)
             {
-                SQL_Q.Enqueue(query3);
+                AddSqlQuery(query3);
                 ReturnLogSave(string.Format("SetLoadComplete TB_PICK_INOUT_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}, BARCODEINFO : {2}", strLinecode, strEquipid, strBcrinfo));
                 return "TB_PICK_INOUT_HISTORY INSERT FAIL";
             }
@@ -1216,7 +1228,7 @@ namespace AMM
 
             if (nJudge == 0)
             {
-                SQL_Q.Enqueue(query);
+                AddSqlQuery(query);
                 ReturnLogSave(string.Format("SetSortComplete TB_PICK_INOUT_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}, BARCODEINFO : {2}", strLinecode, strEquipid, strBcrinfo));
                 return "TB_PICK_INOUT_HISTORY INSERT FAIL";
             }
@@ -1328,7 +1340,7 @@ namespace AMM
 
             if (nJudge == 0)
             {
-                SQL_Q.Enqueue(query);
+                AddSqlQuery(query);
                 ReturnLogSave(string.Format("SetSortComplete TB_PICK_INOUT_HISTORY INSERT FAIL BARCODEINFO : {0}", strBcrinfo));
                 return "TB_PICK_INOUT_HISTORY INSERT FAIL";
             }
@@ -1573,7 +1585,7 @@ namespace AMM
 
             if (nJudge == 0)
             {
-                SQL_Q.Enqueue(query1);
+                AddSqlQuery(query1);
                 ReturnLogSave(string.Format("SetPickIDNo TB_IDNUNMER_INFO INSERT FAIL LINECODE : {0}, EQUIPID : {1}, PREFIX : {2}, NUMBER : {3}", strLinecode, strEquipid, strPrefix, strNumber));
                 return "TB_IDNUNMER_INFO INSERT FAIL";
             }
@@ -1595,7 +1607,7 @@ namespace AMM
 
             if (nJudge == 0)
             {
-                SQL_Q.Enqueue(query);
+                AddSqlQuery(query);
                 ReturnLogSave(string.Format("SetPickIDNo TB_IDNUNMER_INFO UPDATE FAIL LINECODE : {0}, EQUIPID : {1}, NUMBER : {2}", strLinecode, strEquipid, strNumber));
                 return "TB_IDNUNMER_INFO UPDATE FAIL";
             }
@@ -1729,7 +1741,7 @@ namespace AMM
 
             if (nJudge == 0)
             {
-                SQL_Q.Enqueue(query1);
+                AddSqlQuery(query1);
                 ReturnLogSave(string.Format("SetEqEvent TB_EVENT_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}, ERRORTYPE : {2}", strLinecode, strEquipid, strErrortype));
                 return "TB_EVENT_HISTORY INSERT FAIL";
             }
@@ -1772,7 +1784,7 @@ namespace AMM
 
             if (nJudge == 0)
             {
-                SQL_Q.Enqueue(query);
+                AddSqlQuery(query);
                 ReturnLogSave(string.Format("SetEquipmentInfo TB_SET_EQUIP INSERT FAIL LINECODE : {0}, EQUIPID : {1}, INDEX : {2}", strLinecode, strEquipid, strIndex));
                 return "TB_SET_EQUIP INSERT FAIL";
             }
@@ -1827,7 +1839,7 @@ namespace AMM
 
             if (nJudge == 0)
             {
-                SQL_Q.Enqueue(query);
+                AddSqlQuery(query);
                 ReturnLogSave(string.Format("SetPicking_Readyinfo TB_PICK_READY_INFO INSERT FAIL LINECODE : {0}, EQUIPID : {1}, PICKID : {2}", strLinecode, strEquipid, strPickid));
                 return "TB_PICK_READY_INFO INSERT FAIL";
             }
@@ -1860,7 +1872,7 @@ namespace AMM
 
             if (nJudge == 0)
             {
-                SQL_Q.Enqueue(query);
+                AddSqlQuery(query);
                 ReturnLogSave(string.Format("SetPicking_Listinfo TB_PICK_LIST_INFO INSERT FAIL LINECODE : {0}, EQUIPID : {1}, PICKID : {2}", strLinecode, strEquipid, strPickid));
                 return "TB_PICK_LIST_INFO INSERT FAIL";
             }
@@ -2112,7 +2124,7 @@ namespace AMM
 
             if (nJudge == 0)
             {
-                SQL_Q.Enqueue(query);
+                AddSqlQuery(query);
                 ReturnLogSave(string.Format("Delete_EquipmentInfo2 TB_SET_EQUIP DELETE FAIL LINECODE : {0}, EQUIPID : {1}", strLinecode, strEquipid));
                 return "TB_SET_EQUIP DELETE FAIL";
             }
@@ -2130,7 +2142,7 @@ namespace AMM
 
             if (nJudge == 0)
             {
-                SQL_Q.Enqueue(query);
+                AddSqlQuery(query);
                 ReturnLogSave(string.Format("Delete_PickReadyinfo TB_PICK_READY_INFO DELETE FAIL LINECODE : {0}, PICKID : {1}", strLinecode, strPickid));
                 return "TB_PICK_READY_INFO DELETE FAIL";
             }
@@ -2148,7 +2160,7 @@ namespace AMM
 
             if (nJudge == 0)
             {
-                SQL_Q.Enqueue(query);
+                AddSqlQuery(query);
                 ReturnLogSave(string.Format("Delete_PickReadyinfo_ReelID TB_PICK_READY_INFO DELETE FAIL LINECODE : {0}, REELID : {1}", strLinecode, strReelid));
                 return "TB_PICK_READY_INFO DELETE FAIL";
             }
@@ -2166,7 +2178,7 @@ namespace AMM
 
             if (nJudge == 0)
             {
-                SQL_Q.Enqueue(query);
+                AddSqlQuery(query);
                 ReturnLogSave(string.Format("Delete_Picklistinfo_Reelid TB_PICK_LIST_INFO DELETE FAIL LINECODE : {0}, REELID : {1}", strLinecode, strReelid));
                 return "TB_PICK_LIST_INFO DELETE FAIL";
             }
@@ -2216,7 +2228,7 @@ namespace AMM
 
             if (nJudge == 0)
             {
-                SQL_Q.Enqueue(query);
+                AddSqlQuery(query);
                 ReturnLogSave(string.Format("Delete_PickIDNo TB_IDNUNMER_INFO DELETE FAIL LINECODE : {0}, EQUIPID : {1}", strLinecode, strEquipid));
                 return "TB_IDNUNMER_INFO DELETE FAIL";
             }
@@ -2250,7 +2262,7 @@ namespace AMM
 
             if (nJudge == 0)
             {
-                SQL_Q.Enqueue(query2);
+                AddSqlQuery(query2);
                 ReturnLogSave(string.Format("Delete_Pickidinfo2 TB_PICK_ID_HISTORY Delete fail Linecode:{0}, Equipid:{1}, Pickid:{2}", strLinecode, strEquipid, strPickid));
                 return "NG";
             }
@@ -2277,7 +2289,7 @@ namespace AMM
 
             if (nJudge == 0)
             {
-                SQL_Q.Enqueue(query);
+                AddSqlQuery(query);
                 return "NG";
             }
 
@@ -2294,7 +2306,7 @@ namespace AMM
 
             if (nJudge == 0)
             {
-                SQL_Q.Enqueue(query);
+                AddSqlQuery(query);
                 ReturnLogSave(string.Format("Delete_MTL_Tower TB_MTL_INFO DELETE FAIL EQUIPID : {0}", strEqid));
                 return "TB_MTL_INFO DELETE FAIL";
             }
@@ -2325,7 +2337,7 @@ namespace AMM
 
             if (nJudge == 0)
             {
-                SQL_Q.Enqueue(query1);
+                AddSqlQuery(query1);
                 ReturnLogSave(string.Format("User_Register TB_USER_INFO INSERT FAIL SID : {0}", sid));
                 return "TB_USER_INFO INSERT FAIL";
             }
@@ -2381,7 +2393,7 @@ namespace AMM
 
             if (nJudge == 0)
             {
-                SQL_Q.Enqueue(query1);
+                AddSqlQuery(query1);
                 ReturnLogSave(string.Format("Set_Twr_Use TB_TOWER_USE INSERT FAIL TOWER : {0}, USER : {1}", strTower, strUse));
                 return "TB_TOWER_USE INSERT FAIL";
             }
@@ -2500,7 +2512,7 @@ namespace AMM
 
             if (nJudge == 0)
             {
-                SQL_Q.Enqueue(query1);
+                AddSqlQuery(query1);
                 ReturnLogSave(string.Format("Set_Twr_State TB_TOWER_STATE INSERT FAIL LINECODE : {0}, EQUIPID : {1} ", strLinecode, strEqid));
                 return "TB_TOWER_STATE INSERT FAIL";
             }
@@ -2637,7 +2649,7 @@ namespace AMM
             int nJudge = MSSql.SetData(queryList); ///return 확인 해서 false 값 날려 야 함.
 
             if (nJudge == 0)
-                SQL_Q.Enqueue(query);
+                AddSqlQuery(query);
 
             return nJudge; // 1: OK else: fail
         }
@@ -2663,7 +2675,7 @@ namespace AMM
 
                 if (nReturn == 0)
                 {
-                    SQL_Q.Enqueue(query);
+                    AddSqlQuery(query);
                     return 0;
                 }
                     
@@ -2678,7 +2690,7 @@ namespace AMM
 
                 if (nReturn == 0)
                 {
-                    SQL_Q.Enqueue(query);
+                    AddSqlQuery(query);
                     return 0;
                 }
             }
@@ -2695,7 +2707,7 @@ namespace AMM
 
             if (nReturn == 0)
             {
-                SQL_Q.Enqueue(query);
+                AddSqlQuery(query);
                 return 0;
             }
 
@@ -2722,7 +2734,7 @@ namespace AMM
 
                 if (nReturn == 0)
                 {
-                    SQL_Q.Enqueue(query);
+                    AddSqlQuery(query);
                     return 0;
                 }
             }
@@ -2735,7 +2747,7 @@ namespace AMM
 
                 if (nReturn == 0)
                 {
-                    SQL_Q.Enqueue(query);
+                    AddSqlQuery(query);
                     return 0;
                 }
             }
@@ -2752,7 +2764,7 @@ namespace AMM
 
             if (nReturn == 0)
             {
-                SQL_Q.Enqueue(query);
+                AddSqlQuery(query);
                 return 0;
             }
 
@@ -2779,7 +2791,7 @@ namespace AMM
 
                 if (nReturn == 0)
                 {
-                    SQL_Q.Enqueue(query);
+                    AddSqlQuery(query);
                     return 0;
                 }
             }
@@ -2792,7 +2804,7 @@ namespace AMM
 
                 if (nReturn == 0)
                 {
-                    SQL_Q.Enqueue(query);
+                    AddSqlQuery(query);
                     return 0;
                 }
             }
@@ -2809,7 +2821,7 @@ namespace AMM
 
             if (nReturn == 0)
             {
-                SQL_Q.Enqueue(query);
+                AddSqlQuery(query);
                 return 0;
             }
 
@@ -2836,7 +2848,7 @@ namespace AMM
 
                 if (nReturn == 0)
                 {
-                    SQL_Q.Enqueue(query);
+                    AddSqlQuery(query);
                     return 0;
                 }
             }
@@ -2849,7 +2861,7 @@ namespace AMM
 
                 if (nReturn == 0)
                 {
-                    SQL_Q.Enqueue(query);
+                    AddSqlQuery(query);
                     return 0;
                 }
             }
@@ -2866,7 +2878,7 @@ namespace AMM
 
             if (nReturn == 0)
             {
-                SQL_Q.Enqueue(query);
+                AddSqlQuery(query);
                 return 0;
             }
 
@@ -2893,7 +2905,7 @@ namespace AMM
 
                 if (nReturn == 0)
                 {
-                    SQL_Q.Enqueue(query);
+                    AddSqlQuery(query);
                     return 0;
                 }
             }
@@ -2906,7 +2918,7 @@ namespace AMM
 
                 if (nReturn == 0)
                 {
-                    SQL_Q.Enqueue(query);
+                    AddSqlQuery(query);
                     return 0;
                 }
             }
@@ -2923,7 +2935,7 @@ namespace AMM
 
             if (nReturn == 0)
             {
-                SQL_Q.Enqueue(query);
+                AddSqlQuery(query);
                 return 0;
             }
 
@@ -2972,7 +2984,7 @@ namespace AMM
 
                 if (nReturn == 0)
                 {
-                    SQL_Q.Enqueue(query);
+                    AddSqlQuery(query);
                     return 0;
                 }
             }
@@ -2985,7 +2997,7 @@ namespace AMM
 
                 if (nReturn == 0)
                 {
-                    SQL_Q.Enqueue(query);
+                    AddSqlQuery(query);
                     return 0;
                 }
             }
@@ -3001,7 +3013,7 @@ namespace AMM
 
             if (nReturn == 0)
             {
-                SQL_Q.Enqueue(query);
+                AddSqlQuery(query);
                 return 0;
             }
 
@@ -3031,7 +3043,7 @@ namespace AMM
 
                 if (nReturn == 0)
                 {
-                    SQL_Q.Enqueue(query);
+                    AddSqlQuery(query);
                     return 0;
                 }
             }
@@ -3044,7 +3056,7 @@ namespace AMM
 
                 if (nReturn == 0)
                 {
-                    SQL_Q.Enqueue(query);
+                    AddSqlQuery(query);
                     return 0;
                 }
             }
@@ -3060,7 +3072,7 @@ namespace AMM
 
             if (nReturn == 0)
             {
-                SQL_Q.Enqueue(query);
+                AddSqlQuery(query);
                 return 0;
             }
 
