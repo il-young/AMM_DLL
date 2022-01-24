@@ -230,7 +230,7 @@ namespace AMM
         {
             try
             {
-                string query = "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_NAME = '" + tableName + "'";
+                string query = "SELECT COUNT(*) FROM information_schema.COLUMNS with(NOLOCK) WHERE TABLE_NAME = '" + tableName + "'";
                 DataTable dt = GetData(query);
                 if (dt.Rows.Count > 0)
                     return Convert.ToInt16(dt.Rows[0][0].ToString());
@@ -248,7 +248,7 @@ namespace AMM
         {
             try
             {
-                string query = "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_NAME = '" + tableName + "'";
+                string query = "SELECT TABLE_NAME FROM information_schema.TABLES with(NOLOCK) WHERE TABLE_NAME = '" + tableName + "'";
                 DataTable dt = GetData(query);
                 if (dt.Rows.Count > 0)
                     return true;
@@ -270,7 +270,7 @@ namespace AMM
 
                 this.sqlConnectionString = GetConnectionStringNoDatabase();
 
-                string query = "SELECT name FROM sys.databases WHERE name = '" + databaseName + "'";
+                string query = "SELECT name FROM sys.databases with(NOLOCK) WHERE name = '" + databaseName + "'";
                 DataTable dt = GetData(query);
 
                 sqlConnectionString = tempConnectionString;
