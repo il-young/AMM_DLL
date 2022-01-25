@@ -114,7 +114,7 @@ namespace AMM
         {
             string query;
 
-            query = string.Format("IF EXISTS (SELECT EQUIP_ID FROM TB_STATUS WHERE LINE_CODE='{0}' and EQUIP_ID='{1}') BEGIN SELECT 99 CNT END ELSE BEGIN SELECT 55 CNT END", strLinecode, strEquipid);
+            query = string.Format("IF EXISTS (SELECT EQUIP_ID FROM TB_STATUS with(NOLOCK) WHERE LINE_CODE='{0}' and EQUIP_ID='{1}') BEGIN SELECT 99 CNT END ELSE BEGIN SELECT 55 CNT END", strLinecode, strEquipid);
             DataTable dt = MSSql.GetData(query);
 
             if (dt.Rows.Count == 0)
@@ -504,7 +504,7 @@ namespace AMM
         {
             string query = "";
 
-            query = string.Format(@"SELECT * FROM TB_STATUS WITH (NOLOCK) WHERE LINE_CODE='{0}' and EQUIP_ID='{1}'", strLinecode, strEquipid);
+            query = string.Format(@"SELECT * FROM TB_STATUS with(NOLOCK) WHERE LINE_CODE='{0}' and EQUIP_ID='{1}'", strLinecode, strEquipid);
 
             DataTable dt = MSSql.GetData(query);
 
@@ -563,7 +563,7 @@ namespace AMM
         {
             string query = "";
 
-            query = string.Format(@"SELECT * FROM TB_PICK_ID_INFO with(nolock) WHERE LINE_CODE='{0}' and EQUIP_ID='{1}'", strLinecode, strEquipid);
+            query = string.Format(@"SELECT * FROM TB_PICK_ID_INFO with(NOLOCK) WHERE LINE_CODE='{0}' and EQUIP_ID='{1}'", strLinecode, strEquipid);
 
             DataTable dt = MSSql.GetData(query);
 
@@ -574,7 +574,7 @@ namespace AMM
         {
             string query = "";
 
-            query = string.Format(@"SELECT * FROM TB_PICK_ID_INFO WHERE LINE_CODE='{0}'", strLinecode);
+            query = string.Format(@"SELECT * FROM TB_PICK_ID_INFO with(NOLOCK) WHERE LINE_CODE='{0}'", strLinecode);
 
             DataTable dt = MSSql.GetData(query);
 
@@ -585,7 +585,7 @@ namespace AMM
         {
             string query = "";
 
-            query = string.Format(@"SELECT * FROM TB_PICK_ID_INFO WHERE REQUESTOR='{0}'", strRequestor);
+            query = string.Format(@"SELECT * FROM TB_PICK_ID_INFO with(NOLOCK) WHERE REQUESTOR='{0}'", strRequestor);
 
             DataTable dt = MSSql.GetData(query);
 
@@ -596,7 +596,7 @@ namespace AMM
         {
             string query = "";
 
-            query = string.Format(@"SELECT * FROM TB_PICK_ID_INFO WHERE PICKID='{0}'", strPickID);
+            query = string.Format(@"SELECT * FROM TB_PICK_ID_INFO with(NOLOCK) WHERE PICKID='{0}'", strPickID);
 
             DataTable dt = MSSql.GetData(query);
 
@@ -614,7 +614,7 @@ namespace AMM
             string query1 = "", query2 = "";
 
             /////Pick id 맞는 자재 정보 가져 오기
-            query1 = string.Format(@"SELECT * FROM TB_PICK_LIST_INFO WHERE LINE_CODE='{0}' and EQUIP_ID='{1}' and PICKID='{2}'", strLinecode, strEquipid, strPickingid);
+            query1 = string.Format(@"SELECT * FROM TB_PICK_LIST_INFO with(NOLOCK) WHERE LINE_CODE='{0}' and EQUIP_ID='{1}' and PICKID='{2}'", strLinecode, strEquipid, strPickingid);
 
             DataTable dt = MSSql.GetData(query1);
 
@@ -709,7 +709,7 @@ namespace AMM
             ///////////자재 정보 가져 오기 //TB_PICK_LIST_INFO
             string query = "";
 
-            query = string.Format(@"SELECT * FROM TB_PICK_LIST_INFO WHERE LINE_CODE='{0}' and EQUIP_ID='{1}' and UID='{2}'", strLinecode, strEquipid, strReelid);
+            query = string.Format(@"SELECT * FROM TB_PICK_LIST_INFO with(NOLOCK) WHERE LINE_CODE='{0}' and EQUIP_ID='{1}' and UID='{2}'", strLinecode, strEquipid, strReelid);
             DataTable dt = MSSql.GetData(query);
 
             DeleteHistory();
@@ -820,7 +820,7 @@ namespace AMM
             ///////////자재 정보 가져 오기 //TB_PICK_LIST_INFO
             string query = "", query2 = "";
 
-            query = string.Format(@"SELECT * FROM TB_MTL_INFO WHERE LINE_CODE='{0}' and EQUIP_ID='{1}' and UID='{2}'", strLinecode, strEquipid, strReelid);
+            query = string.Format(@"SELECT * FROM TB_MTL_INFO with(NOLOCK) WHERE LINE_CODE='{0}' and EQUIP_ID='{1}' and UID='{2}'", strLinecode, strEquipid, strReelid);
             DataTable dt = MSSql.GetData(query);
 
             DeleteHistory();
@@ -976,7 +976,7 @@ namespace AMM
             string query1 = "", query2 = "";
 
             ///Pick id 정보 가져 오기
-            query1 = string.Format(@"SELECT * FROM TB_PICK_ID_INFO WHERE LINE_CODE='{0}' and EQUIP_ID='{1}' and PICKID='{2}'", strLinecode, strEquipid, strPickingid);
+            query1 = string.Format(@"SELECT * FROM TB_PICK_ID_INFO with(NOLOCK) WHERE LINE_CODE='{0}' and EQUIP_ID='{1}' and PICKID='{2}'", strLinecode, strEquipid, strPickingid);
 
             DataTable dt = MSSql.GetData(query1);
 
@@ -1061,7 +1061,7 @@ namespace AMM
             ////////2. 자재 확인
             string query = "", query2 = "", query3 = "";
 
-            query = string.Format(@"SELECT * FROM TB_MTL_INFO WHERE UID='{0}'", strInfo[1]);
+            query = string.Format(@"SELECT * FROM TB_MTL_INFO with(NOLOCK) WHERE UID='{0}'", strInfo[1]);
             DataTable dt = MSSql.GetData(query);
 
             int nCount = dt.Rows.Count;
@@ -1412,7 +1412,7 @@ namespace AMM
         {
             string query = "";
 
-            query = string.Format(@"SELECT TOWER_NO FROM dbo.TB_MTL_INFO WHERE SID='{0}'", sid);
+            query = string.Format(@"SELECT TOWER_NO FROM dbo.TB_MTL_INFO with(NOLOCK) WHERE SID='{0}'", sid);
 
             DataTable dt = MSSql.GetData(query);
 
@@ -1459,7 +1459,7 @@ namespace AMM
             string query = "";
 
             string strEquipid = string.Format("TWR{0}", group);
-            query = string.Format(@"SELECT * FROM dbo.TB_MTL_INFO WHERE LINE_CODE='{0}' and EQUIP_ID='{1}' and SID='{2}'", linecode, strEquipid, sid);
+            query = string.Format(@"SELECT * FROM dbo.TB_MTL_INFO with(NOLOCK) WHERE LINE_CODE='{0}' and EQUIP_ID='{1}' and SID='{2}'", linecode, strEquipid, sid);
 
             DataTable dt = MSSql.GetData(query);
 
@@ -1619,7 +1619,7 @@ namespace AMM
         {
             string query = "";
 
-            query = string.Format(@"SELECT * FROM TB_IDNUNMER_INFO WHERE LINE_CODE='{0}' and EQUIP_ID='{1}'", strLinecode, strEquipid);
+            query = string.Format(@"SELECT * FROM TB_IDNUNMER_INFO with(NOLOCK) WHERE LINE_CODE='{0}' and EQUIP_ID='{1}'", strLinecode, strEquipid);
 
             DataTable dt = MSSql.GetData(query);
 
@@ -1629,7 +1629,7 @@ namespace AMM
         {
             string query = "";
 
-            query = string.Format(@"SELECT * FROM TB_PICK_INOUT_HISTORY WHERE LINE_CODE='{0}' and EQUIP_ID='{1}' and DATETIME>'{2}' and DATETIME<='{3}' ", strLinecode, strEquipid, dStart, dEnd);
+            query = string.Format(@"SELECT * FROM TB_PICK_INOUT_HISTORY with(NOLOCK) WHERE LINE_CODE='{0}' and EQUIP_ID='{1}' and DATETIME>'{2}' and DATETIME<='{3}' ", strLinecode, strEquipid, dStart, dEnd);
 
             DataTable dt = MSSql.GetData(query);
 
@@ -1640,7 +1640,7 @@ namespace AMM
         {
             string query = "";
 
-            query = string.Format(@"SELECT * FROM TB_PICK_INOUT_HISTORY WHERE LINE_CODE='{0}' and SID='{1}' and DATETIME>'{2}' and DATETIME<='{3}' ", strLinecode, strSid, dStart, dEnd);
+            query = string.Format(@"SELECT * FROM TB_PICK_INOUT_HISTORY with(NOLOCK) WHERE LINE_CODE='{0}' and SID='{1}' and DATETIME>'{2}' and DATETIME<='{3}' ", strLinecode, strSid, dStart, dEnd);
 
             DataTable dt = MSSql.GetData(query);
 
@@ -1651,7 +1651,7 @@ namespace AMM
         {
             string query = "";
 
-            query = string.Format(@"SELECT * FROM TB_PICK_INOUT_HISTORY WHERE LINE_CODE='{0}' and EQUIP_ID='{1}' and SID='{2}' and DATETIME>'{3}' and DATETIME<='{4}' ", strLinecode, strEquipid, strSid, dStart, dEnd);
+            query = string.Format(@"SELECT * FROM TB_PICK_INOUT_HISTORY with(NOLOCK) WHERE LINE_CODE='{0}' and EQUIP_ID='{1}' and SID='{2}' and DATETIME>'{3}' and DATETIME<='{4}' ", strLinecode, strEquipid, strSid, dStart, dEnd);
 
             DataTable dt = MSSql.GetData(query);
 
@@ -1662,7 +1662,7 @@ namespace AMM
         {
             string query = "";
 
-            query = string.Format(@"SELECT * FROM TB_PICK_INOUT_HISTORY WHERE UID='{0}' ", strUid);
+            query = string.Format(@"SELECT * FROM TB_PICK_INOUT_HISTORY with(NOLOCK) WHERE UID='{0}' ", strUid);
 
             DataTable dt = MSSql.GetData(query);
 
@@ -1673,7 +1673,7 @@ namespace AMM
         {
             string query = "";
 
-            query = string.Format(@"SELECT * FROM TB_MTL_INFO WHERE LINE_CODE='{0}'", strLinecode);
+            query = string.Format(@"SELECT * FROM TB_MTL_INFO with(NOLOCK) WHERE LINE_CODE='{0}'", strLinecode);
 
             DataTable dt = MSSql.GetData(query);
 
@@ -1684,7 +1684,7 @@ namespace AMM
         {
             string query = "";
 
-            query = string.Format(@"SELECT * FROM TB_MTL_INFO WHERE LINE_CODE='{0}' and EQUIP_ID='{1}'", strLinecode, strEquipid);
+            query = string.Format(@"SELECT * FROM TB_MTL_INFO with(NOLOCK) WHERE LINE_CODE='{0}' and EQUIP_ID='{1}'", strLinecode, strEquipid);
 
             DataTable dt = MSSql.GetData(query);
 
@@ -1695,7 +1695,7 @@ namespace AMM
         {
             string query = "";
 
-            query = string.Format(@"SELECT * FROM TB_MTL_INFO WHERE LINE_CODE='{0}' and EQUIP_ID='{1}' and TOWER_NO='{2}'", strLinecode, strEquipid, strTwrNo);
+            query = string.Format(@"SELECT * FROM TB_MTL_INFO with(NOLOCK) WHERE LINE_CODE='{0}' and EQUIP_ID='{1}' and TOWER_NO='{2}'", strLinecode, strEquipid, strTwrNo);
 
             DataTable dt = MSSql.GetData(query);
 
@@ -1706,7 +1706,7 @@ namespace AMM
         {
             string query = "";
 
-            query = string.Format(@"SELECT * FROM TB_MTL_INFO WHERE LINE_CODE='{0}' and EQUIP_ID='{1}' and SID='{2}'", strLinecode, strEquipid, strSID);
+            query = string.Format(@"SELECT * FROM TB_MTL_INFO with(NOLOCK) WHERE LINE_CODE='{0}' and EQUIP_ID='{1}' and SID='{2}'", strLinecode, strEquipid, strSID);
 
             DataTable dt = MSSql.GetData(query);
 
@@ -1717,7 +1717,7 @@ namespace AMM
         {
             string query = "";
 
-            query = string.Format(@"SELECT * FROM TB_MTL_INFO WHERE LINE_CODE='{0}' and EQUIP_ID='{1}' and UID='{2}'", strLinecode, strEquipid, strUID);
+            query = string.Format(@"SELECT * FROM TB_MTL_INFO with(NOLOCK) WHERE LINE_CODE='{0}' and EQUIP_ID='{1}' and UID='{2}'", strLinecode, strEquipid, strUID);
 
             DataTable dt = MSSql.GetData(query);
 
@@ -1760,7 +1760,7 @@ namespace AMM
         {
             string query = "";
 
-            query = string.Format(@"SELECT * FROM TB_EVENT_HISTORY WHERE LINE_CODE='{0}' and EQUIP_ID='{1}'", strLinecode, strEquipid);
+            query = string.Format(@"SELECT * FROM TB_EVENT_HISTORY with(NOLOCK) WHERE LINE_CODE='{0}' and EQUIP_ID='{1}'", strLinecode, strEquipid);
 
             DataTable dt = MSSql.GetData(query);
 
@@ -1796,7 +1796,7 @@ namespace AMM
         {
             string query = "";
 
-            query = string.Format(@"SELECT * FROM TB_SET_EQUIP");
+            query = string.Format(@"SELECT * FROM TB_SET_EQUIP with(NOLOCK) ");
 
             DataTable dt = MSSql.GetData(query);
 
@@ -1807,7 +1807,7 @@ namespace AMM
         {
             string query = "";
 
-            query = string.Format(@"SELECT * FROM TB_SET_EQUIP WHERE LINE_CODE='{0}'", strLinecode);
+            query = string.Format(@"SELECT * FROM TB_SET_EQUIP with(NOLOCK) WHERE LINE_CODE='{0}'", strLinecode);
 
             DataTable dt = MSSql.GetData(query);
 
@@ -1896,7 +1896,7 @@ namespace AMM
         public DataTable GetPickingListinfo(string strLinecode, string strEquipid, string strPickingid)
         {
             string query1 = "";
-            query1 = string.Format(@"SELECT * FROM TB_PICK_LIST_INFO WHERE LINE_CODE='{0}' and EQUIP_ID='{1}' and PICKID='{2}'", strLinecode, strEquipid, strPickingid);
+            query1 = string.Format(@"SELECT * FROM TB_PICK_LIST_INFO with(NOLOCK) WHERE LINE_CODE='{0}' and EQUIP_ID='{1}' and PICKID='{2}'", strLinecode, strEquipid, strPickingid);
 
             DataTable dt = MSSql.GetData(query1);
 
@@ -1906,7 +1906,7 @@ namespace AMM
         public DataTable GetPickingListinfo(string strLinecode, string strPickingid)
         {
             string query1 = "";
-            query1 = string.Format(@"SELECT * FROM TB_PICK_LIST_INFO WHERE LINE_CODE='{0}' and PICKID='{1}'", strLinecode, strPickingid);
+            query1 = string.Format(@"SELECT * FROM TB_PICK_LIST_INFO with(NOLOCK) WHERE LINE_CODE='{0}' and PICKID='{1}'", strLinecode, strPickingid);
 
             DataTable dt = MSSql.GetData(query1);
 
@@ -1916,7 +1916,7 @@ namespace AMM
         public DataTable GetPickingMtlinfo(string strLinecode, string strUid)
         {
             string query1 = "";
-            query1 = string.Format(@"SELECT * FROM TB_PICK_LIST_INFO WHERE LINE_CODE='{0}' and UID='{1}'", strLinecode, strUid);
+            query1 = string.Format(@"SELECT * FROM TB_PICK_LIST_INFO with(NOLOCK) WHERE LINE_CODE='{0}' and UID='{1}'", strLinecode, strUid);
 
             DataTable dt = MSSql.GetData(query1);
 
@@ -1927,7 +1927,7 @@ namespace AMM
         {
             string query = "";
 
-            query = string.Format("IF EXISTS (SELECT UID FROM TB_PICK_LIST_INFO WHERE UID='{0}') BEGIN SELECT 99 CNT END ELSE BEGIN SELECT 55 CNT END", uid);
+            query = string.Format("IF EXISTS (SELECT UID FROM TB_PICK_LIST_INFO with(NOLOCK) WHERE UID='{0}') BEGIN SELECT 99 CNT END ELSE BEGIN SELECT 55 CNT END", uid);
             DataTable dt = MSSql.GetData(query);
 
             if (dt.Rows.Count == 0)
@@ -1949,7 +1949,7 @@ namespace AMM
         {
             string query = "";
 
-            query = string.Format("IF EXISTS (SELECT UID FROM TB_PICK_READY_INFO WHERE UID='{0}') BEGIN SELECT 99 CNT END ELSE BEGIN SELECT 55 CNT END", uid);
+            query = string.Format("IF EXISTS (SELECT UID FROM TB_PICK_READY_INFO with(NOLOCK) WHERE UID='{0}') BEGIN SELECT 99 CNT END ELSE BEGIN SELECT 55 CNT END", uid);
             DataTable dt = MSSql.GetData(query);
 
             if (dt.Rows.Count == 0)
@@ -1971,7 +1971,7 @@ namespace AMM
         {
             string query = "";
 
-            query = string.Format(@"SELECT * FROM TB_PICK_READY_INFO WHERE PICKID='{0}'", strPickingid);
+            query = string.Format(@"SELECT * FROM TB_PICK_READY_INFO with(NOLOCK) WHERE PICKID='{0}'", strPickingid);
 
             DataTable dt = MSSql.GetData(query);
 
@@ -1982,7 +1982,7 @@ namespace AMM
         {
             string query = "";
 
-            query = string.Format(@"SELECT PICKID FROM TB_PICK_READY_INFO WHERE ORDER_TYPE='{0}'", strSM);
+            query = string.Format(@"SELECT PICKID FROM TB_PICK_READY_INFO with(NOLOCK) WHERE ORDER_TYPE='{0}'", strSM);
 
             DataTable dt = MSSql.GetData(query);
 
@@ -2022,9 +2022,9 @@ namespace AMM
             string query = "";
 
             if (nType == 0)
-                query = string.Format(@"SELECT * FROM TB_USER_INFO WHERE SID='{0}'", sid);
+                query = string.Format(@"SELECT * FROM TB_USER_INFO with(NOLOCK) WHERE SID='{0}'", sid);
             else
-                query = string.Format(@"SELECT * FROM TB_USER_INFO WHERE NAME='{0}'", sid);
+                query = string.Format(@"SELECT * FROM TB_USER_INFO with(NOLOCK) WHERE NAME='{0}'", sid);
 
             DataTable dt = MSSql.GetData(query);
 
@@ -2037,7 +2037,7 @@ namespace AMM
         {
             string query = "";
 
-            query = string.Format("DELETE FROM TB_USER_INFO WHERE SID='{0}'", sid);
+            query = string.Format("DELETE FROM TB_USER_INFO with(NOLOCK) WHERE SID='{0}'", sid);
 
             int nJudge = MSSql.SetData(query);
 
@@ -2086,7 +2086,7 @@ namespace AMM
         {
             string query = "";
 
-            query = string.Format(@"SELECT * FROM TB_USER_REQ");
+            query = string.Format(@"SELECT * FROM TB_USER_REQ with(NOLOCK)");
 
             DataTable dt = MSSql.GetData(query);
 
@@ -2361,7 +2361,7 @@ namespace AMM
         {
             string query = "";
 
-            query = string.Format(@"SELECT * FROM TB_USER_INFO WHERE SID='{0}'", strSid);
+            query = string.Format(@"SELECT * FROM TB_USER_INFO with(NOLOCK) WHERE SID='{0}'", strSid);
 
             DataTable dt = MSSql.GetData(query);
 
@@ -2417,7 +2417,7 @@ namespace AMM
         {
             string query = "";
 
-            query = string.Format(@"SELECT * FROM TB_TOWER_USE WHERE TWR_NAME='{0}'", strTower);
+            query = string.Format(@"SELECT * FROM TB_TOWER_USE with(NOLOCK) WHERE TWR_NAME='{0}'", strTower);
 
             DataTable dt = MSSql.GetData(query);
 
@@ -2475,7 +2475,7 @@ namespace AMM
             string badge = SID;
             string query = "";
 
-            query = string.Format(@"SELECT * FROM TB_USER_INFO_LT WHERE SID='{0}'", badge);
+            query = string.Format(@"SELECT * FROM TB_USER_INFO_LT with(NOLOCK) WHERE SID='{0}'", badge);
             DataTable dt = MSSql.GetData(query);
 
             int nCount = dt.Rows.Count;
@@ -2537,7 +2537,7 @@ namespace AMM
         {
             string query = "";
 
-            query = string.Format(@"SELECT * FROM TB_TOWER_STATE WHERE LINE_CODE='{0}' and EQUIP_ID='{1}'", strLinecode, strEqid);
+            query = string.Format(@"SELECT * FROM TB_TOWER_STATE with(NOLOCK) WHERE LINE_CODE='{0}' and EQUIP_ID='{1}'", strLinecode, strEqid);
 
             DataTable dt = MSSql.GetData(query);
 
@@ -2560,7 +2560,7 @@ namespace AMM
         {
             string query = "";
 
-            query = string.Format(@"SELECT * FROM TB_TOWER_STATE WHERE LINE_CODE='{0}' and EQUIP_ID='{1}'", strLinecode, strEqid);
+            query = string.Format(@"SELECT * FROM TB_TOWER_STATE with(NOLOCK) WHERE LINE_CODE='{0}' and EQUIP_ID='{1}'", strLinecode, strEqid);
 
             DataTable dt = MSSql.GetData(query);
 
@@ -2580,7 +2580,7 @@ namespace AMM
         {
             string query = "";
 
-            query = string.Format(@"SELECT * FROM TB_TOWER_STATE WHERE LINE_CODE='{0}' and EQUIP_ID='{1}'", strLinecode, strEqid);
+            query = string.Format(@"SELECT * FROM TB_TOWER_STATE with(NOLOCK) WHERE LINE_CODE='{0}' and EQUIP_ID='{1}'", strLinecode, strEqid);
 
             DataTable dt = MSSql.GetData(query);
 
@@ -2618,7 +2618,7 @@ namespace AMM
         {
             string query;
 
-            query = string.Format("IF EXISTS (SELECT EQUIP_ID FROM Skynet.dbo.TB_STATUS WHERE LINE_CODE='{0}' and EQUIP_ID='{1}') BEGIN SELECT 99 CNT END ELSE BEGIN SELECT 55 CNT END", strLinecode, strEquipid);
+            query = string.Format("IF EXISTS (SELECT EQUIP_ID FROM Skynet.dbo.TB_STATUS with(NOLOCK) WHERE LINE_CODE='{0}' and EQUIP_ID='{1}') BEGIN SELECT 99 CNT END ELSE BEGIN SELECT 55 CNT END", strLinecode, strEquipid);
             DataTable dt = MSSql.GetData(query);
 
             if (dt.Rows.Count == 0)
@@ -3099,7 +3099,7 @@ namespace AMM
         {
             string query = "";
 
-            query = string.Format(@"SELECT * FROM Skynet.dbo.TB_WEBSERVICE_STB WHERE LOCATION={0}", strLocation);
+            query = string.Format(@"SELECT * FROM Skynet.dbo.TB_WEBSERVICE_STB with(NOLOCK) WHERE LOCATION={0}", strLocation);
 
             DataTable dt = MSSql.GetData(query);
 
@@ -3110,7 +3110,7 @@ namespace AMM
         {
             string query = "";
 
-            query = string.Format("DELETE FROM Skynet.dbo.TB_WEBSERVICE_STB WHERE REEL_ID='{0}'", strReelid);
+            query = string.Format("DELETE FROM Skynet.dbo.TB_WEBSERVICE_STB with(NOLOCK) WHERE REEL_ID='{0}'", strReelid);
 
             int nJudge = MSSql.SetData(query);
 
