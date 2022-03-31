@@ -50,10 +50,10 @@ namespace AMM
         {
             int res = 0;
 
-            while(true)
+            while (true)
             {
-                if(SQL_Q.Count > 0)
-                {                    
+                if (SQL_Q.Count > 0)
+                {
                     res = MSSql.SetData(SQL_Q.Peek().Query);
                     ReturnLogSave(string.Format("DBThread_Start Queue Count : {0}, Queue[0] : {1}, Return : {2}", SQL_Q.Count, SQL_Q.Peek(), res));
 
@@ -67,7 +67,7 @@ namespace AMM
                         {
                             sql_temp.retry();
                             SQL_Q.Enqueue(sql_temp);
-                            ReturnLogSave(string.Format("DBThread_Start Retry:{0} Query:{1}",sql_temp.retry_cnt, sql_temp.Query));
+                            ReturnLogSave(string.Format("DBThread_Start Retry:{0} Query:{1}", sql_temp.retry_cnt, sql_temp.Query));
                         }
                         else
                         {
@@ -76,7 +76,7 @@ namespace AMM
                     }
                 }
                 System.Threading.Thread.Sleep(100);
-            }                
+            }
         }
 
 
@@ -222,7 +222,7 @@ namespace AMM
 
             this.Skynet_SM_Alive(Linecode, "1760", strEquipid, nAlive);
 
-            return nReturn;            
+            return nReturn;
         }
 
         public string SetEqEnd(string strLinecode, string strEquipid)
@@ -713,7 +713,7 @@ namespace AMM
             DataTable dt = MSSql.GetData(query);
 
             DeleteHistory();
-            
+
             //////////로그 저장 ///TB_PICK_INOUT_HISTORY            
             List<string> queryList2 = new List<string>();
 
@@ -1016,7 +1016,7 @@ namespace AMM
             nJudge = MSSql.SetData(queryList2);
 
             if (nJudge == 0)
-            {                
+            {
                 ReturnLogSave(string.Format("SetUnloadEnd TB_PICK_ID_INFO DELETE FAIL LINECODE : {0}, EQUIPID : {1}, PICKINGID : {2}", strLinecode, strEquipid, strPickingid));
                 return "TB_PICK_ID_INFO DELETE FAIL";
             }
@@ -1271,7 +1271,7 @@ namespace AMM
                     }
                     catch (Exception ex)
                     {
-                        Skynet_Set_Webservice_Faileddata(strMnbr, "", "CMS_IN", strInfo[1], "", strInfo[2], strInfo[5], strInfo[3], "", strInfo[4], "EA", strGroup);                        
+                        Skynet_Set_Webservice_Faileddata(strMnbr, "", "CMS_IN", strInfo[1], "", strInfo[2], strInfo[5], strInfo[3], "", strInfo[4], "EA", strGroup);
                         ReturnLogSave(string.Format("SetSortComplete WEBSERVICE CMS_IN EXCEPTION LINECODE : {0}, EQUIPID : {1}, BARCODEINFO : {2}, EXECPTION_CODE : {3}", strLinecode, strEquipid, strBcrinfo, ex.Message));
                         return "FAILED_WEBSERVICE";
                     }
@@ -2678,7 +2678,7 @@ namespace AMM
                     AddSqlQuery(query);
                     return 0;
                 }
-                    
+
             }
             else if (nCheck == 0) // 없음
             {
@@ -3123,9 +3123,30 @@ namespace AMM
         /// <returns></returns>
         private int DeleteHistory()
         {
-            int nJudge = MSSql.SetData("delete from  [ATK4-AMM-DBv1].dbo.TB_PICK_INOUT_HISTORY where 1=1 and [DATETIME] <  REPLACE(REPLACE(REPLACE(CONVERT(varchar, dateadd(month, -6, getdate()), 20), '-', ''), ' ', ''), ':', '')");
+            int nJudge = MSSql.SetData("delete from [ATK4-AMM-DBv1].dbo.TB_PICK_INOUT_HISTORY where 1=1 and [DATETIME] <  REPLACE(REPLACE(REPLACE(CONVERT(varchar, dateadd(month, -6, getdate()), 20), '-', ''), ' ', ''), ':', '')");
 
             return nJudge;
+        }
+
+        public string ReadAutoSync()
+        {
+            string res = "";
+
+            DataTable tbl = MSSql.GetData(string.Format("select * from TB_AUTO_SYNC with(NOLOCK)"));
+
+            res = tbl.Rows[0]["UPDATE_DATE"].ToString();
+            res += "," + tbl.Rows[0]["UPDATE_TIME"].ToString();
+            res += "," + tbl.Rows[0]["UPDATE_INTERVAL"].ToString();
+            res += "," + tbl.Rows[0]["UPDATE_VAL"].ToString();
+            res += "," + tbl.Rows[0]["UPDATE_USE"].ToString();
+            res += "," + tbl.Rows[0]["UPDATE_DAY"].ToString();
+
+            return res;
+        }
+
+        public int WriteAutoSync(string sql)
+        {
+            return MSSql.SetData(sql);
         }
     }
     public struct Reelinfo
