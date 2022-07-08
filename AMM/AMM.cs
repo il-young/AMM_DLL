@@ -1036,6 +1036,22 @@ namespace AMM
             return "OK";
         }
 
+        private void UpdateBooking(string TowerName, string ReelID)
+        {
+            List<string> queryList1 = new List<string>();
+            string query2 = string.Format("update TB_PROD_INVT_BOOKING set [REEL_TOWER_IN]='{0}', [REEL_TOWER_IN_TIME]=getdate() where [REEL_ID]='{1}'", TowerName.Replace("TWR",""), ReelID);
+                
+            queryList1.Add(query2);
+
+            int nJudge = MSSql.SetData(queryList1);
+
+            if (nJudge == 0)
+            {
+                AddSqlQuery(query2);
+                ReturnLogSave(string.Format("TB_PROD_INVT_BOOKING Update Fail : {0}", query2));                
+            }
+        }
+
         public string SetLoadComplete(string strLinecode, string strEquipid, string strBcrinfo, bool bWebservice)
         {
             //1. Barcode parsing 
@@ -1087,6 +1103,7 @@ namespace AMM
                 return "TB_MTL_INFO INSERT FAIL";
             }
 
+            UpdateBooking(strEquipid, strInfo[1]);  //20220706
             DeleteHistory();
 
             //////////로그 저장 ///TB_PICK_INOUT_HISTORY
@@ -1104,6 +1121,8 @@ namespace AMM
                 ReturnLogSave(string.Format("SetLoadComplete TB_PICK_INOUT_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}, BARCODEINFO : {2}", strLinecode, strEquipid, strBcrinfo));
                 return "TB_PICK_INOUT_HISTORY INSERT FAIL";
             }
+
+            
 
             ///////////IT Webservice////////////
             /////모든 MNBR을 넣어 줘야 함.
