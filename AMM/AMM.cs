@@ -6,6 +6,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Net;
+using System.IO;
 
 namespace AMM
 {
@@ -1038,18 +1040,32 @@ namespace AMM
 
         private void UpdateBooking(string TowerName, string ReelID)
         {
-            List<string> queryList1 = new List<string>();
-            string query2 = string.Format("update TB_PROD_INVT_BOOKING set [REEL_TOWER_IN]='{0}', [REEL_TOWER_IN_TIME]=getdate() where [REEL_ID]='{1}'", TowerName.Replace("TWR",""), ReelID);
-                
-            queryList1.Add(query2);
+            string TowerNum = TowerName.Replace("TWR", "");
+            string url = string.Format("http://10.131.3.43:8080/api/invt/prod/booking/reel-tower/in/c-1/json?REEL_TOWER_IN={0}&REEL_ID={1}", TowerNum, ReelID);  //테스트 사이트
+            string responseText = string.Empty;
 
-            int nJudge = MSSql.SetData(queryList1);
+            byte[] arr = new byte[10];
 
-            if (nJudge == 0)
+            HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(url);
+            request.Method = "PUT";
+            request.ContentType = "text / plain";
+            request.ContentLength = arr.Length;
+            request.KeepAlive = true;
+
+            Stream dataStream = request.GetRequestStream();
+
+            dataStream.Write(arr, 0, arr.Length);
+
+            using (HttpWebResponse resp = (HttpWebResponse)request.GetResponse())
             {
-                AddSqlQuery(query2);
-                ReturnLogSave(string.Format("TB_PROD_INVT_BOOKING Update Fail : {0}", query2));                
+                Stream respStream = resp.GetResponseStream();
+                using (StreamReader sr = new StreamReader(respStream))
+                {
+                    responseText = sr.ReadToEnd();
+                }
             }
+            dataStream.Close();
+            ReturnLogSave(responseText);
         }
 
         public string SetLoadComplete(string strLinecode, string strEquipid, string strBcrinfo, bool bWebservice)
@@ -1062,6 +1078,9 @@ namespace AMM
 
             ////1.바코드 파싱
             ///
+
+
+            ReturnLogSave(string.Format("SetLoadComplete {0}, {1}, {2}, {3}", strLinecode, strEquipid, strBcrinfo, bWebservice));
 
             var strReturn = "";
 
@@ -1103,7 +1122,7 @@ namespace AMM
                 return "TB_MTL_INFO INSERT FAIL";
             }
 
-            UpdateBooking(strEquipid, strInfo[1]);  //20220706
+            UpdateBooking(strEquipid, strInfo[1]);  //20220721 Web Service 형식으로 변경하여 적용
             DeleteHistory();
 
             //////////로그 저장 ///TB_PICK_INOUT_HISTORY
