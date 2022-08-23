@@ -16,7 +16,7 @@ namespace AMM
     public class AMM
     {
         public struct sql_cmd
-        {
+        {           
             public string Query;
             public int retry_cnt;
 
@@ -736,7 +736,7 @@ namespace AMM
                 ReturnLogSave(string.Format("SetUnloadOut TB_PICK_LIST_INFO UPDATE FAIL LINECODE : {0}, EQUIPID : {1}, REELID : {2}", strLinecode, strEquipid, strReelid));
                 return "TB_PICK_LIST_INFO UPDATE FAIL";
             }
-
+            
             ////자재 삭제          
             string strJudge = Delete_MTL_Info(strReelid);
 
@@ -751,9 +751,9 @@ namespace AMM
 
             query = string.Format(@"SELECT * FROM TB_PICK_LIST_INFO with(NOLOCK) WHERE LINE_CODE='{0}' and EQUIP_ID='{1}' and UID='{2}'", strLinecode, strEquipid, strReelid);
             DataTable dt = MSSql.GetData(query);
-
+                       
             DeleteHistory();
-
+            
             //////////로그 저장 ///TB_PICK_INOUT_HISTORY            
             List<string> queryList2 = new List<string>();
 
@@ -779,7 +779,7 @@ namespace AMM
                 ReturnLogSave(string.Format("SetUnloadOut TB_PICK_LIST_INFO Select FAIL LINECODE : {0}, EQUIPID : {1}, REELID : {2}", strLinecode, strEquipid, strReelid));
             }
 
-
+            
             //////////////IT Webservice////////////
             /////모든 MNBR을 넣어 줘야 함.
             string strMnbr = "", strResut = "", strTwrno = "", strGroup = "";
@@ -816,6 +816,15 @@ namespace AMM
             else if (strTwrno == "T0703") strMnbr = "6418";
             else if (strTwrno == "T0704") strMnbr = "6419";
             //]210907_Sangik.choi_7번그룹 추가
+            else if (strTwrno == "T0801") strMnbr = "41649";    //220823_ilyoung_타워그룹추가
+            else if (strTwrno == "T0802") strMnbr = "41655";    //220823_ilyoung_타워그룹추가
+            else if (strTwrno == "T0803") strMnbr = "41654";    //220823_ilyoung_타워그룹추가
+            else if (strTwrno == "T0804") strMnbr = "41651";    //220823_ilyoung_타워그룹추가
+            else if (strTwrno == "T0901") strMnbr = "41652";    //220823_ilyoung_타워그룹추가
+            else if (strTwrno == "T0902") strMnbr = "41653";    //220823_ilyoung_타워그룹추가
+            else if (strTwrno == "T0903") strMnbr = "41656";    //220823_ilyoung_타워그룹추가
+            else if (strTwrno == "T0904") strMnbr = "41650";    //220823_ilyoung_타워그룹추가
+                                                                //220823 8, 9 그룹 추가
 
             if (strMnbr != "")
             {
@@ -926,6 +935,15 @@ namespace AMM
             else if (strTwrno == "T0703") strMnbr = "6418";
             else if (strTwrno == "T0704") strMnbr = "6419";
             //]210907_Sangik.choi_7번그룹 추가
+            else if (strTwrno == "T0801") strMnbr = "41649";    //220823_ilyoung_타워그룹추가
+            else if (strTwrno == "T0802") strMnbr = "41655";    //220823_ilyoung_타워그룹추가
+            else if (strTwrno == "T0803") strMnbr = "41654";    //220823_ilyoung_타워그룹추가
+            else if (strTwrno == "T0804") strMnbr = "41651";    //220823_ilyoung_타워그룹추가
+            else if (strTwrno == "T0901") strMnbr = "41652";    //220823_ilyoung_타워그룹추가
+            else if (strTwrno == "T0902") strMnbr = "41653";    //220823_ilyoung_타워그룹추가
+            else if (strTwrno == "T0903") strMnbr = "41656";    //220823_ilyoung_타워그룹추가
+            else if (strTwrno == "T0904") strMnbr = "41650";    //220823_ilyoung_타워그룹추가
+            //220823 8, 9 그룹 추가
 
             if (strMnbr != "")
             {
@@ -1225,6 +1243,15 @@ namespace AMM
             else if (strInfo[0] == "T0703") strMnbr = "6418";
             else if (strInfo[0] == "T0704") strMnbr = "6419";
             //]210907_Sangik.choi_7번그룹 추가
+            else if (strInfo[0] == "T0801") strMnbr = "41649";    //220823_ilyoung_타워그룹추가
+            else if (strInfo[0] == "T0802") strMnbr = "41655";    //220823_ilyoung_타워그룹추가
+            else if (strInfo[0] == "T0803") strMnbr = "41654";    //220823_ilyoung_타워그룹추가
+            else if (strInfo[0] == "T0804") strMnbr = "41651";    //220823_ilyoung_타워그룹추가
+            else if (strInfo[0] == "T0901") strMnbr = "41652";    //220823_ilyoung_타워그룹추가
+            else if (strInfo[0] == "T0902") strMnbr = "41653";    //220823_ilyoung_타워그룹추가
+            else if (strInfo[0] == "T0903") strMnbr = "41656";    //220823_ilyoung_타워그룹추가
+            else if (strInfo[0] == "T0904") strMnbr = "41650";    //220823_ilyoung_타워그룹추가
+            //220823 8, 9 그룹 추가
 
             if (strMnbr != "")
             {
