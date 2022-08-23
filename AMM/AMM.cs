@@ -9,6 +9,8 @@ using System.Net.Http.Headers;
 using System.Net;
 using System.IO;
 
+
+
 namespace AMM
 {
     public class AMM
@@ -30,11 +32,27 @@ namespace AMM
             }
         }
 
+        public struct RPSData
+        {
+            public string TowerName;
+            public string ReelID;
+
+            public RPSData(string t, string r)
+            {
+                TowerName = t;
+                ReelID = r;
+            }
+        }
+
         public MsSqlManager MSSql = null; //AMM
         public bool bConnection = false;
 
         private static Queue<sql_cmd> SQL_Q = new Queue<sql_cmd>();
         private System.Threading.Thread DBThread;
+
+        private static Queue<RPSData> RPS_Q = new Queue<RPSData>();
+        private System.Threading.Thread RPSThread;
+
 
 
         private void AddSqlQuery(string query)
@@ -45,6 +63,23 @@ namespace AMM
             temp.Query = query;
 
             SQL_Q.Enqueue(temp);
+        }
+
+        public void RPSThreadStart()
+        {
+            while(true)
+            {
+                if(RPS_Q.Count > 0)
+                {
+                    RPSData tempData = RPS_Q.Dequeue();
+                    Task<string> res = UpdateBooking(tempData.TowerName, tempData.ReelID);
+
+                    if (res.Result.ToString() == "")
+                        RPS_Q.Enqueue(tempData);
+                }
+
+                System.Threading.Thread.Sleep(1000);
+            }
         }
 
 
@@ -105,6 +140,9 @@ namespace AMM
 
             DBThread = new System.Threading.Thread(DBThread_Start);
             DBThread.Start();
+
+            RPSThread = new System.Threading.Thread(RPSThreadStart);
+            RPSThread.Start();
 
 
             ReturnLogSave("Connect OK");
@@ -1038,8 +1076,12 @@ namespace AMM
             return "OK";
         }
 
-        private void UpdateBooking(string TowerName, string ReelID)
+        System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
+
+        async private Task<string> UpdateBooking(string TowerName, string ReelID)
         {
+            sw.Restart();
+
             string TowerNum = TowerName.Replace("TWR", "");
             string url = string.Format("http://10.131.3.43:8080/api/invt/prod/booking/reel-tower/in/c-1/json?REEL_TOWER_IN={0}&REEL_ID={1}", TowerNum, ReelID);  //테스트 사이트
             string responseText = string.Empty;
@@ -1050,7 +1092,7 @@ namespace AMM
             request.Method = "PUT";
             request.ContentType = "text / plain";
             request.ContentLength = arr.Length;
-            request.KeepAlive = true;
+            request.KeepAlive = false;
 
             Stream dataStream = request.GetRequestStream();
 
@@ -1064,8 +1106,13 @@ namespace AMM
                     responseText = sr.ReadToEnd();
                 }
             }
+            
             dataStream.Close();
-            ReturnLogSave(responseText);
+
+            sw.Stop();
+            
+            ReturnLogSave(responseText + "\t" + sw.ElapsedMilliseconds.ToString());
+            return responseText;
         }
 
         public string SetLoadComplete(string strLinecode, string strEquipid, string strBcrinfo, bool bWebservice)
@@ -1122,7 +1169,7 @@ namespace AMM
                 return "TB_MTL_INFO INSERT FAIL";
             }
 
-            UpdateBooking(strEquipid, strInfo[1]);  //20220721 Web Service 형식으로 변경하여 적용
+            RPS_Q.Enqueue(new RPSData(strEquipid, strInfo[1]));  //20220819 Web Service 형식으로 변경하여 적용
             DeleteHistory();
 
             //////////로그 저장 ///TB_PICK_INOUT_HISTORY
