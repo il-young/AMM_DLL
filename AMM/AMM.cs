@@ -142,7 +142,8 @@ namespace AMM
             DBThread.Start();
 
             RPSThread = new System.Threading.Thread(RPSThreadStart);
-            RPSThread.Start();
+            if(RPSThread.IsAlive == false)
+               RPSThread.Start();
 
 
             ReturnLogSave("Connect OK");
@@ -1730,7 +1731,7 @@ namespace AMM
         public DataTable GetPickIDNo(string strLinecode, string strEquipid)
         {
             string query = "";
-
+            //220823_ilyoung_타워그룹추가 DB에 추가해 줘야함
             query = string.Format(@"SELECT * FROM TB_IDNUNMER_INFO with(NOLOCK) WHERE LINE_CODE='{0}' and EQUIP_ID='{1}'", strLinecode, strEquipid);
 
             DataTable dt = MSSql.GetData(query);
