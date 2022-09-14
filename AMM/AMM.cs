@@ -715,8 +715,11 @@ namespace AMM
 
         public string SetUnloadOut(string strLinecode, string strEquipid, string strReelid, bool bWebservice) ///3/9 다시 디버깅
         {
+            System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
+            sw.Restart();
             string query1 = "", query2 = "";
 
+            
             ///////Pick 자재상태 업데이트
             List<string> queryList1 = new List<string>();
             string strSendtime = string.Format("{0}{1:00}{2:00}{3:00}{4:00}{5:00}", DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, DateTime.Now.Hour, DateTime.Now.Minute, DateTime.Now.Second);
@@ -729,6 +732,7 @@ namespace AMM
 
             queryList1.Add(query1);
 
+            
             int nJudge = MSSql.SetData(queryList1); ///return 확인 해서 false 값 날려 야 함.
 
             if (nJudge == 0)
@@ -737,7 +741,9 @@ namespace AMM
                 ReturnLogSave(string.Format("SetUnloadOut TB_PICK_LIST_INFO UPDATE FAIL LINECODE : {0}, EQUIPID : {1}, REELID : {2}", strLinecode, strEquipid, strReelid));
                 return "TB_PICK_LIST_INFO UPDATE FAIL";
             }
+
             
+
             ////자재 삭제          
             string strJudge = Delete_MTL_Info(strReelid);
 
@@ -752,8 +758,9 @@ namespace AMM
 
             query = string.Format(@"SELECT * FROM TB_PICK_LIST_INFO with(NOLOCK) WHERE LINE_CODE='{0}' and EQUIP_ID='{1}' and UID='{2}'", strLinecode, strEquipid, strReelid);
             DataTable dt = MSSql.GetData(query);
-                       
+            
             DeleteHistory();
+
             
             //////////로그 저장 ///TB_PICK_INOUT_HISTORY            
             List<string> queryList2 = new List<string>();
@@ -779,8 +786,8 @@ namespace AMM
             {
                 ReturnLogSave(string.Format("SetUnloadOut TB_PICK_LIST_INFO Select FAIL LINECODE : {0}, EQUIPID : {1}, REELID : {2}", strLinecode, strEquipid, strReelid));
             }
-
             
+
             //////////////IT Webservice////////////
             /////모든 MNBR을 넣어 줘야 함.
             string strMnbr = "", strResut = "", strTwrno = "", strGroup = "";
@@ -827,15 +834,17 @@ namespace AMM
             else if (strTwrno == "T0904") strMnbr = "41650";    //220823_ilyoung_타워그룹추가
                                                                 //220823 8, 9 그룹 추가
 
+            
             if (strMnbr != "")
-            {
+            {            
+                bWebservice = false;
                 if (bWebservice)
                 {
                     try
-                    {
+                    {                        
                         var taskResut = Fnc_InoutTransaction(strMnbr, dt.Rows[0]["REQUESTOR"].ToString(), "CMS_OUT", strReelid, "", dt.Rows[0]["SID"].ToString(), dt.Rows[0]["MANUFACTURER"].ToString(), dt.Rows[0]["LOTID"].ToString(), "", dt.Rows[0]["QTY"].ToString(), "EA");
                         strResut = taskResut.Result;
-
+                        
                         if (strResut.Contains("Success") != true && strResut.Contains("Same Status") != true
                             && strResut.Contains("Enhance Location") != true && strResut.Contains("Already exist") != true)
                         {
@@ -844,6 +853,7 @@ namespace AMM
                         }
 
                         string strReturn = SetFailedWebservicedata(strEquipid);
+
                         return strReturn;
                     }
                     catch (Exception ex)
@@ -858,7 +868,6 @@ namespace AMM
                     Skynet_Set_Webservice_Faileddata(strMnbr, dt.Rows[0]["REQUESTOR"].ToString(), "CMS_OUT", strReelid, "", dt.Rows[0]["SID"].ToString(), dt.Rows[0]["MANUFACTURER"].ToString(), dt.Rows[0]["LOTID"].ToString(), "", dt.Rows[0]["QTY"].ToString(), "EA", strGroup);
                 }
             }
-
             return "OK";
         }
         public string SetUnloadOut_Manual(string strLinecode, string strEquipid, string strReelid, bool bWebservice) ///3/14
@@ -1099,39 +1108,47 @@ namespace AMM
 
         async private Task<string> UpdateBooking(string TowerName, string ReelID)
         {
-            sw.Restart();
-
-            string TowerNum = TowerName.Replace("TWR", "");
-            string url = string.Format("http://10.131.3.43:8080/api/invt/prod/booking/reel-tower/in/c-1/json?REEL_TOWER_IN={0}&REEL_ID={1}", TowerNum, ReelID);  //테스트 사이트
-            string responseText = string.Empty;
-
-            byte[] arr = new byte[10];
-
-            HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(url);
-            request.Method = "PUT";
-            request.ContentType = "text / plain";
-            request.ContentLength = arr.Length;
-            request.KeepAlive = false;
-
-            Stream dataStream = request.GetRequestStream();
-
-            dataStream.Write(arr, 0, arr.Length);
-
-            using (HttpWebResponse resp = (HttpWebResponse)request.GetResponse())
+            try
             {
-                Stream respStream = resp.GetResponseStream();
-                using (StreamReader sr = new StreamReader(respStream))
-                {
-                    responseText = sr.ReadToEnd();
-                }
-            }
-            
-            dataStream.Close();
+                sw.Restart();
 
-            sw.Stop();
-            
-            ReturnLogSave(responseText + "\t" + sw.ElapsedMilliseconds.ToString());
-            return responseText;
+                string TowerNum = TowerName.Replace("TWR", "");
+                string url = string.Format("http://10.131.3.43:8080/api/invt/prod/booking/reel-tower/in/c-1/json?REEL_TOWER_IN={0}&REEL_ID={1}", TowerNum, ReelID);  //테스트 사이트
+                string responseText = string.Empty;
+
+                byte[] arr = new byte[10];
+
+                HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(url);
+                request.Method = "PUT";
+                request.ContentType = "text / plain";
+                request.ContentLength = arr.Length;
+                request.KeepAlive = false;
+
+                Stream dataStream = request.GetRequestStream();
+
+                dataStream.Write(arr, 0, arr.Length);
+
+                using (HttpWebResponse resp = (HttpWebResponse)request.GetResponse())
+                {
+                    Stream respStream = resp.GetResponseStream();
+                    using (StreamReader sr = new StreamReader(respStream))
+                    {
+                        responseText = sr.ReadToEnd();
+                    }
+                }
+
+                dataStream.Close();
+
+                sw.Stop();
+
+                ReturnLogSave(responseText + "\t" + sw.ElapsedMilliseconds.ToString());
+                return responseText;
+            }
+            catch (Exception ex )
+            {
+                ReturnLogSave(string.Format("UpdateBooking Fail : {0}", ex.Message));
+            }
+            return "";
         }
 
         public string SetLoadComplete(string strLinecode, string strEquipid, string strBcrinfo, bool bWebservice)
@@ -1315,6 +1332,8 @@ namespace AMM
 
             ////1.바코드 파싱
 
+            ReturnLogSave("SetSortComplete");
+
             var strReturn = "";
 
             string[] strInfo = strBcrinfo.Split(';');
@@ -1416,6 +1435,8 @@ namespace AMM
 
             ////1.바코드 파싱
             var strReturn = "";
+
+            ReturnLogSave("SetSortComplete");
 
             if (info.manufacturer == string.Empty)
             {
@@ -1583,6 +1604,7 @@ namespace AMM
         {
             string strurl = "";
 
+            /*
             if (strMnbr == "" || strReelID == "")
                 return "";
 
@@ -1591,11 +1613,21 @@ namespace AMM
             strurl = string.Format("http://cim_service.amkor.co.kr:8080/ysj/material/txn_cms?mnbr={0}&badge={1}&action_type={2}&matl_id={3}&matl_type={4}&matl_sid={5}&matl_vendorlot={6}&matl_vendorname={7}&matl_batch={8}&matl_expired_date={9}&matl_qty={10}&matl_qty_unit={11}",
                 strMnbr, strBadge, strAction, strReelID, strMtlType, strSID, strBatch, strVendor, strBatch, strExpireddate, strQty, strUnit);
 
+            ReturnLogSave(strurl);
+
             var res_ = await Fnc_RunAsync(strurl);
 
+            //var res_ = Fnc_RunAsync(strurl);
+
+            //ReturnLogSave(strurl);
+
             Fnc_WebServiceLog(strurl, res_);
+            
 
             return res_;
+            */
+
+            return "OK";
         }
 
         public async Task<string> Wbs_Get_Stripmarking_mtlinfo(string strLinecode, string strSM)
@@ -1632,6 +1664,7 @@ namespace AMM
 
         public void ReturnLogSave(string msg)
         {
+            /*
             System.IO.DirectoryInfo di = new System.IO.DirectoryInfo(@"C:\Log\ReturnLog");
             if (!di.Exists) { di.Create(); }
 
@@ -1644,6 +1677,7 @@ namespace AMM
             string strSave;
             strSave = strHead + msg;
             Fnc_WriteFile(strPath, strSave);
+            */
         }
 
         public void Fnc_WriteFile(string strFileName, string strLine)
@@ -2398,13 +2432,15 @@ namespace AMM
 
             query = string.Format("DELETE FROM TB_MTL_INFO WHERE UID='{0}'", strReelid);
 
-            int nJudge = MSSql.SetData(query);
+            AddSqlQuery(query);
 
-            if (nJudge == 0)
-            {
-                AddSqlQuery(query);
-                return "NG";
-            }
+            //int nJudge = MSSql.SetData(query);
+
+            //if (nJudge == 0)
+            //{
+            //    AddSqlQuery(query);
+            //    return "NG";
+            //}
 
             return "OK";
         }
@@ -3236,9 +3272,10 @@ namespace AMM
         /// <returns></returns>
         private int DeleteHistory()
         {
-            int nJudge = MSSql.SetData("delete from [ATK4-AMM-DBv1].dbo.TB_PICK_INOUT_HISTORY where 1=1 and [DATETIME] <  REPLACE(REPLACE(REPLACE(CONVERT(varchar, dateadd(month, -6, getdate()), 20), '-', ''), ' ', ''), ':', '')");
-
-            return nJudge;
+            //int nJudge = MSSql.SetData("delete from [ATK4-AMM-DBv1].dbo.TB_PICK_INOUT_HISTORY where 1=1 and [DATETIME] <  REPLACE(REPLACE(REPLACE(CONVERT(varchar, dateadd(month, -6, getdate()), 20), '-', ''), ' ', ''), ':', '')");
+            AddSqlQuery("delete from [ATK4-AMM-DBv1].dbo.TB_PICK_INOUT_HISTORY where 1=1 and [DATETIME] <  REPLACE(REPLACE(REPLACE(CONVERT(varchar, dateadd(month, -6, getdate()), 20), '-', ''), ' ', ''), ':', '')");
+            //return nJudge;
+            return 0;
         }
 
         public string ReadAutoSync()
