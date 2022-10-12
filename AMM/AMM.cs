@@ -15,6 +15,12 @@ namespace AMM
 {
     public class AMM
     {
+        public enum RPSDataType
+        {
+            Get = 1,
+            Put = 2,
+        }
+
         public struct sql_cmd
         {           
             public string Query;
@@ -32,15 +38,16 @@ namespace AMM
             }
         }
 
+
         public struct RPSData
         {
-            public string TowerName;
-            public string ReelID;
+            public RPSDataType Type;
+            public string URL;
 
-            public RPSData(string t, string r)
+            public RPSData(RPSDataType t, string r)
             {
-                TowerName = t;
-                ReelID = r;
+                Type = t;
+                URL = "";
             }
         }
 
@@ -72,14 +79,33 @@ namespace AMM
                 if(RPS_Q.Count > 0)
                 {
                     RPSData tempData = RPS_Q.Dequeue();
-                    Task<string> res = UpdateBooking(tempData.TowerName, tempData.ReelID);
+                    string res = string.Empty;                    
 
-                    if (res.Result.ToString() == "")
-                        RPS_Q.Enqueue(tempData);
+                    if(tempData.Type == RPSDataType.Get)
+                    {
+                        res = GetWebServiceData(tempData.URL).Result;
+                        
+                        if(tempData.URL.Contains("amkor-batch") == true && res != "")
+                        {
+                            SetAmkorBatch(res);
+                        }
+                        else
+                        {
+
+                        }
+                    }
+                    else
+                    {
+                        res = PutWebServiceData(tempData.URL).Result;
+
+                        if (res == "")
+                            RPS_Q.Enqueue(tempData);
+                    }
                 }
 
-                System.Threading.Thread.Sleep(1000);
+                ReturnLogSave(string.Format("RPS_Q Count : {0}", RPS_Q.Count));
             }
+            System.Threading.Thread.Sleep(1000);
         }
 
 
@@ -92,7 +118,7 @@ namespace AMM
                 if (SQL_Q.Count > 0)
                 {
                     res = MSSql.SetData(SQL_Q.Peek().Query);
-                    ReturnLogSave(string.Format("DBThread_Start Queue Count : {0}, Queue[0] : {1}, Return : {2}", SQL_Q.Count, SQL_Q.Peek(), res));
+                    ////ReturnLogSave(string.Format("DBThread_Start Queue Count : {0}, Queue[0] : {1}, Return : {2}", SQL_Q.Count, SQL_Q.Peek(), res));
 
                     if (res != 0)
                         SQL_Q.Dequeue();
@@ -104,11 +130,11 @@ namespace AMM
                         {
                             sql_temp.retry();
                             SQL_Q.Enqueue(sql_temp);
-                            ReturnLogSave(string.Format("DBThread_Start Retry:{0} Query:{1}", sql_temp.retry_cnt, sql_temp.Query));
+                            ////ReturnLogSave(string.Format("DBThread_Start Retry:{0} Query:{1}", sql_temp.retry_cnt, sql_temp.Query));
                         }
                         else
                         {
-                            ReturnLogSave(string.Format("DBThread_Start Retry Fail Query : {0}", sql_temp.Query));
+                            ////ReturnLogSave(string.Format("DBThread_Start Retry Fail Query : {0}", sql_temp.Query));
                         }
                     }
                 }
@@ -121,7 +147,7 @@ namespace AMM
         {
             if (MSSql != null)
             {
-                ReturnLogSave("SqlManager is null");
+                //ReturnLogSave("SqlManager is null");
                 return "NG";
             }
 
@@ -132,21 +158,24 @@ namespace AMM
             if (MSSql.OpenTest() == false)
             {
                 bConnection = false;
-                ReturnLogSave("OpenTest Fail");
+                //ReturnLogSave("OpenTest Fail");
                 return "NG";
             }
             else
                 bConnection = true;
 
             DBThread = new System.Threading.Thread(DBThread_Start);
-            DBThread.Start();
+
+            if(DBThread.IsAlive == false)
+                DBThread.Start();
 
             RPSThread = new System.Threading.Thread(RPSThreadStart);
-            if(RPSThread.IsAlive == false)
-               RPSThread.Start();
+
+            if (RPSThread.IsAlive == false)
+                RPSThread.Start();
 
 
-            ReturnLogSave("Connect OK");
+            //ReturnLogSave("Connect OK");
             return "OK";
 
         }
@@ -175,13 +204,13 @@ namespace AMM
 
             if (strLinecode == "")
             {
-                ReturnLogSave("SetEqStart EMPTY LINECODE");
+                //ReturnLogSave("SetEqStart EMPTY LINECODE");
                 return "EMPTY LINECODE";
             }
 
             if (strEquipid == "")
             {
-                ReturnLogSave("SetEqStart EMPTY EQUIP");
+                //ReturnLogSave("SetEqStart EMPTY EQUIP");
                 return "EMPTY EQUIPID";
             }
 
@@ -200,7 +229,7 @@ namespace AMM
 
                 if (nReturn == 0)
                 {
-                    ReturnLogSave(string.Format("SetEqStart TB_STATUS UPDATE FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
+                    //ReturnLogSave(string.Format("SetEqStart TB_STATUS UPDATE FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
                     AddSqlQuery(query);
                     return "TB_STATUS UPDATE FAIL";
                 }
@@ -215,13 +244,13 @@ namespace AMM
                 if (nReturn == 0)
                 {
                     AddSqlQuery(query);
-                    ReturnLogSave(string.Format("SetEqStart TB_STATUS INSERT FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
+                    //ReturnLogSave(string.Format("SetEqStart TB_STATUS INSERT FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
                     return "TB_STATUS INSERT FAIL";
                 }
             }
             else
             {
-                ReturnLogSave(string.Format("SetEqStart EQUIPID CHECK FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
+                //ReturnLogSave(string.Format("SetEqStart EQUIPID CHECK FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
                 return "EQUIPID CHECK FAIL";
             }
 
@@ -234,7 +263,7 @@ namespace AMM
             if (nReturn == 0)
             {
                 AddSqlQuery(query);
-                ReturnLogSave(string.Format("SetEqStart TB_STATUS_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}", strLinecode, strEquipid));
+                //ReturnLogSave(string.Format("SetEqStart TB_STATUS_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}", strLinecode, strEquipid));
                 return "TB_STATUS_HISTORY INSERT FAIL";
             }
 
@@ -255,7 +284,7 @@ namespace AMM
             if (nReturn == 0)
             {
                 AddSqlQuery(sql);
-                ReturnLogSave(string.Format("SetEqAlive TB_STATUS UPDATE FAIL LINECODE : {0}, EQUIPID : {1}", Linecode, strEquipid));
+                //ReturnLogSave(string.Format("SetEqAlive TB_STATUS UPDATE FAIL LINECODE : {0}, EQUIPID : {1}", Linecode, strEquipid));
             }
 
             if (!this.bConnection)
@@ -272,13 +301,13 @@ namespace AMM
 
             if (strLinecode == "")
             {
-                ReturnLogSave("SetEqEnd EMPTY LINECODE");
+                //ReturnLogSave("SetEqEnd EMPTY LINECODE");
                 return "EMPTY LINECODE";
             }
 
             if (strEquipid == "")
             {
-                ReturnLogSave("SetEqEnd EMPTY EQUIP");
+                //ReturnLogSave("SetEqEnd EMPTY EQUIP");
                 return "EMPTY EQUIPID";
             }
 
@@ -297,7 +326,7 @@ namespace AMM
                 if (nReturn == 0)
                 {
                     AddSqlQuery(query);
-                    ReturnLogSave(string.Format("SetEqEnd TB_STATUS UPDATE FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
+                    //ReturnLogSave(string.Format("SetEqEnd TB_STATUS UPDATE FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
                     return "TB_STATUS UPDATE FAIL";
                 }
             }
@@ -311,13 +340,13 @@ namespace AMM
                 if (nReturn == 0)
                 {
                     AddSqlQuery(query);
-                    ReturnLogSave(string.Format("SetEqEnd TB_STATUS INSERT FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
+                    //ReturnLogSave(string.Format("SetEqEnd TB_STATUS INSERT FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
                     return "TB_STATUS INSERT FAIL";
                 }
             }
             else
             {
-                ReturnLogSave(string.Format("SetEqEnd EQUIPID CHECK FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
+                //ReturnLogSave(string.Format("SetEqEnd EQUIPID CHECK FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
                 return "EQUIPID CHECK FAIL";
             }
 
@@ -330,7 +359,7 @@ namespace AMM
             if (nReturn == 0)
             {
                 AddSqlQuery(query);
-                ReturnLogSave(string.Format("SetEqEnd TB_STATUS_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
+                //ReturnLogSave(string.Format("SetEqEnd TB_STATUS_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
                 return "TB_STATUS_HISTORY INSERT FAIL";
             }
 
@@ -352,13 +381,13 @@ namespace AMM
 
             if (strLinecode == "")
             {
-                ReturnLogSave("SetEqStatus EMPTY LINECODE");
+                //ReturnLogSave("SetEqStatus EMPTY LINECODE");
                 return "EMPTY LINECODE";
             }
 
             if (strEquipid == "")
             {
-                ReturnLogSave("SetEqStatus EMPTY EQUIP");
+                //ReturnLogSave("SetEqStatus EMPTY EQUIP");
                 return "EMPTY EQUIPID";
             }
 
@@ -377,7 +406,7 @@ namespace AMM
                 if (nReturn == 0)
                 {
                     AddSqlQuery(query);
-                    ReturnLogSave(string.Format("SetEqStatus TB_STATUS UPDATE FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
+                    //ReturnLogSave(string.Format("SetEqStatus TB_STATUS UPDATE FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
                     return "TB_STATUS UPDATE FAIL";
                 }
             }
@@ -391,13 +420,13 @@ namespace AMM
                 if (nReturn == 0)
                 {
                     AddSqlQuery(query);
-                    ReturnLogSave(string.Format("SetEqStatus TB_STATUS INSERT FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
+                    //ReturnLogSave(string.Format("SetEqStatus TB_STATUS INSERT FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
                     return "TB_STATUS INSERT FAIL";
                 }
             }
             else
             {
-                ReturnLogSave(string.Format("SetEqStatus EQUIPID CHECK FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
+                //ReturnLogSave(string.Format("SetEqStatus EQUIPID CHECK FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
                 return "EQUIPID CHECK FAIL";
             }
 
@@ -410,7 +439,7 @@ namespace AMM
             if (nReturn == 0)
             {
                 AddSqlQuery(query);
-                ReturnLogSave(string.Format("SetEqStatus TB_STATUS_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}", strLinecode, strEquipid));
+                //ReturnLogSave(string.Format("SetEqStatus TB_STATUS_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}", strLinecode, strEquipid));
                 return "TB_STATUS_HISTORY INSERT FAIL";
             }
 
@@ -451,13 +480,13 @@ namespace AMM
 
             if (strLinecode == "")
             {
-                ReturnLogSave("SetEqStatus2 EMPTY LINECODE");
+                //ReturnLogSave("SetEqStatus2 EMPTY LINECODE");
                 return "EMPTY LINECODE";
             }
 
             if (strEquipid == "")
             {
-                ReturnLogSave("SetEqStatus2 EMPTY EQUIP");
+                //ReturnLogSave("SetEqStatus2 EMPTY EQUIP");
                 return "EMPTY EQUIPID";
             }
 
@@ -476,7 +505,7 @@ namespace AMM
                 if (nReturn == 0)
                 {
                     AddSqlQuery(query);
-                    ReturnLogSave(string.Format("SetEqStatus2 TB_STATUS UPDATE FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
+                    //ReturnLogSave(string.Format("SetEqStatus2 TB_STATUS UPDATE FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
                     return "TB_STATUS UPDATE FAIL";
                 }
             }
@@ -490,14 +519,14 @@ namespace AMM
                 if (nReturn == 0)
                 {
                     AddSqlQuery(query);
-                    ReturnLogSave(string.Format("SetEqStatus2 TB_STATUS INSERT FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
+                    //ReturnLogSave(string.Format("SetEqStatus2 TB_STATUS INSERT FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
                     return "TB_STATUS INSERT FAIL";
                 }
 
             }
             else
             {
-                ReturnLogSave(string.Format("SetEqStatus2 EQUIPID CHECK FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
+                //ReturnLogSave(string.Format("SetEqStatus2 EQUIPID CHECK FAIL LINECODE : {0}, EQUIPID : {1}, nCheck : {2}", strLinecode, strEquipid, nCheck));
                 return "EQUIPID CHECK FAIL";
             }
 
@@ -510,7 +539,7 @@ namespace AMM
             if (nReturn == 0)
             {
                 AddSqlQuery(query);
-                ReturnLogSave(string.Format("SetEqStatus2 TB_STATUS_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}", strLinecode, strEquipid));
+                //ReturnLogSave(string.Format("SetEqStatus2 TB_STATUS_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}", strLinecode, strEquipid));
                 return "TB_STATUS_HISTORY INSERT FAIL";
             }
 
@@ -575,7 +604,7 @@ namespace AMM
             if (nJudge == 0)
             {
                 AddSqlQuery(query1);
-                ReturnLogSave(string.Format("SetPickingID TB_PICK_ID_INFO INSERT FAIL LINECODE : {0}, EQUIPID : {1}", strLinecode, strEquipid));
+                //ReturnLogSave(string.Format("SetPickingID TB_PICK_ID_INFO INSERT FAIL LINECODE : {0}, EQUIPID : {1}", strLinecode, strEquipid));
                 return "PICK ID INSERT FAIL";
             }
 
@@ -593,7 +622,7 @@ namespace AMM
             if (nJudge == 0)
             {
                 AddSqlQuery(query2);
-                ReturnLogSave(string.Format("SetPickingID TB_PICK_ID_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}", strLinecode, strEquipid));
+                //ReturnLogSave(string.Format("SetPickingID TB_PICK_ID_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}", strLinecode, strEquipid));
                 return "TB_PICK_ID_HISTORY INSERT FAIL";
             }
 
@@ -706,7 +735,7 @@ namespace AMM
             if (nJudge == 0)
             {
                 AddSqlQuery(query2);
-                ReturnLogSave(string.Format("SetUnloadStart TB_PICK_ID_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}", strLinecode, strEquipid));
+                //ReturnLogSave(string.Format("SetUnloadStart TB_PICK_ID_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}", strLinecode, strEquipid));
                 return "TB_PICK_ID_HISTORY INSERT FAIL";
             }
 
@@ -715,6 +744,10 @@ namespace AMM
 
         public string SetUnloadOut(string strLinecode, string strEquipid, string strReelid, bool bWebservice) ///3/9 다시 디버깅
         {
+            try
+            {
+
+            
             System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
             sw.Restart();
             string query1 = "", query2 = "";
@@ -738,7 +771,7 @@ namespace AMM
             if (nJudge == 0)
             {
                 AddSqlQuery(query1);
-                ReturnLogSave(string.Format("SetUnloadOut TB_PICK_LIST_INFO UPDATE FAIL LINECODE : {0}, EQUIPID : {1}, REELID : {2}", strLinecode, strEquipid, strReelid));
+                //ReturnLogSave(string.Format("SetUnloadOut TB_PICK_LIST_INFO UPDATE FAIL LINECODE : {0}, EQUIPID : {1}, REELID : {2}", strLinecode, strEquipid, strReelid));
                 return "TB_PICK_LIST_INFO UPDATE FAIL";
             }
 
@@ -749,7 +782,7 @@ namespace AMM
 
             if (strJudge == "NG")
             {
-                ReturnLogSave(string.Format("SetUnloadOut DELETE FAIL LINECODE : {0}, EQUIPID : {1}, REELID : {2}", strLinecode, strEquipid, strReelid));
+                //ReturnLogSave(string.Format("SetUnloadOut DELETE FAIL LINECODE : {0}, EQUIPID : {1}, REELID : {2}", strLinecode, strEquipid, strReelid));
                 return string.Format("{0} DELETE FAIL", strReelid);
             }
 
@@ -761,32 +794,39 @@ namespace AMM
             
             DeleteHistory();
 
-            
             //////////로그 저장 ///TB_PICK_INOUT_HISTORY            
             List<string> queryList2 = new List<string>();
 
             if (dt.Rows.Count > 0)
             {
-                query2 = string.Format(@"INSERT INTO TB_PICK_INOUT_HISTORY (DATETIME,LINE_CODE,EQUIP_ID,PICKID,UID,STATUS,REQUESTOR,TOWER_NO,SID,LOTID,QTY,MANUFACTURER,PRODUCTION_DATE,INCH_INFO,INPUT_TYPE,ORDER_TYPE) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}','{11}','{12}','{13}','{14}','{15}')",
+                AddTowerOut(strLinecode, strEquipid, dt.Rows[0]["TOWER_NO"].ToString(), dt.Rows[0]["UID"].ToString(), dt.Rows[0]["SID"].ToString(),
+                dt.Rows[0]["LOTID"].ToString(), dt.Rows[0]["QTY"].ToString(), dt.Rows[0]["MANUFACTURER"].ToString(), dt.Rows[0]["PRODUCTION_DATE"].ToString(),
+                dt.Rows[0]["INCH_INFO"].ToString(), dt.Rows[0]["INPUT_TYPE"].ToString(), dt.Rows[0]["AMKOR_BATCH"].ToString());
+
+                query2 = string.Format(@"INSERT INTO TB_PICK_INOUT_HISTORY (DATETIME,LINE_CODE,EQUIP_ID,PICKID,UID,STATUS,REQUESTOR,TOWER_NO,SID,LOTID,QTY,MANUFACTURER,PRODUCTION_DATE,INCH_INFO,INPUT_TYPE,ORDER_TYPE,AMKOR_BATCH) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}','{11}','{12}','{13}','{14}','{15}','{16}')",
                     strSendtime, strLinecode, strEquipid, dt.Rows[0]["PICKID"].ToString(), strReelid, "OUT", dt.Rows[0]["REQUESTOR"].ToString(), dt.Rows[0]["TOWER_NO"].ToString(), dt.Rows[0]["SID"].ToString(), dt.Rows[0]["LOTID"].ToString(),
-                    dt.Rows[0]["QTY"].ToString(), dt.Rows[0]["MANUFACTURER"].ToString(), dt.Rows[0]["PRODUCTION_DATE"].ToString(), dt.Rows[0]["INCH_INFO"].ToString(), dt.Rows[0]["INPUT_TYPE"].ToString(), dt.Rows[0]["ORDER_TYPE"].ToString());
+                    dt.Rows[0]["QTY"].ToString(), dt.Rows[0]["MANUFACTURER"].ToString(), dt.Rows[0]["PRODUCTION_DATE"].ToString(), dt.Rows[0]["INCH_INFO"].ToString(), dt.Rows[0]["INPUT_TYPE"].ToString(), dt.Rows[0]["ORDER_TYPE"].ToString(), dt.Rows[0]["AMKOR_BATCH"].ToString());
 
                 queryList2.Add(query2);
 
-                nJudge = MSSql.SetData(queryList2); ///return 확인 해서 false 값 날려 야 함.
+                nJudge = MSSql.SetData(queryList2); //return 확인 해서 false 값 날려 야 함.
 
                 if (nJudge == 0)
                 {
                     AddSqlQuery(query2);
-                    ReturnLogSave(string.Format("SetUnloadOut TB_PICK_INOUT_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}, REELID : {2}", strLinecode, strEquipid, strReelid));
+                    //ReturnLogSave(string.Format("SetUnloadOut TB_PICK_INOUT_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}, REELID : {2}", strLinecode, strEquipid, strReelid));
                     return "TB_PICK_INOUT_HISTORY INSERT FAIL";
                 }
+
+                
             }
             else
             {
-                ReturnLogSave(string.Format("SetUnloadOut TB_PICK_LIST_INFO Select FAIL LINECODE : {0}, EQUIPID : {1}, REELID : {2}", strLinecode, strEquipid, strReelid));
+                //ReturnLogSave(string.Format("SetUnloadOut TB_PICK_LIST_INFO Select FAIL LINECODE : {0}, EQUIPID : {1}, REELID : {2}", strLinecode, strEquipid, strReelid));
             }
+
             
+
 
             //////////////IT Webservice////////////
             /////모든 MNBR을 넣어 줘야 함.
@@ -868,8 +908,15 @@ namespace AMM
                     Skynet_Set_Webservice_Faileddata(strMnbr, dt.Rows[0]["REQUESTOR"].ToString(), "CMS_OUT", strReelid, "", dt.Rows[0]["SID"].ToString(), dt.Rows[0]["MANUFACTURER"].ToString(), dt.Rows[0]["LOTID"].ToString(), "", dt.Rows[0]["QTY"].ToString(), "EA", strGroup);
                 }
             }
+
+            }
+            catch (Exception ex)
+            {
+                ReturnLogSave(ex.Message);
+            }
             return "OK";
         }
+
         public string SetUnloadOut_Manual(string strLinecode, string strEquipid, string strReelid, bool bWebservice) ///3/14
         {
             ///////Pick 자재상태 업데이트
@@ -885,9 +932,9 @@ namespace AMM
             DeleteHistory();
 
             //////////로그 저장 ///TB_PICK_INOUT_HISTORY
-            query2 = string.Format(@"INSERT INTO TB_PICK_INOUT_HISTORY (DATETIME,LINE_CODE,EQUIP_ID,PICKID,UID,STATUS,REQUESTOR,TOWER_NO,SID,LOTID,QTY,MANUFACTURER,PRODUCTION_DATE,INCH_INFO,INPUT_TYPE) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}','{11}','{12}','{13}','{14}')",
+            query2 = string.Format(@"INSERT INTO TB_PICK_INOUT_HISTORY (DATETIME,LINE_CODE,EQUIP_ID,PICKID,UID,STATUS,REQUESTOR,TOWER_NO,SID,LOTID,QTY,MANUFACTURER,PRODUCTION_DATE,INCH_INFO,INPUT_TYPE,AMKOR_BATCH) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}','{11}','{12}','{13}','{14}', '{15}')",
                 strSendtime, strLinecode, strEquipid, "-", strReelid, "OUT-MANUAL", "-", dt.Rows[0]["TOWER_NO"].ToString(), dt.Rows[0]["SID"].ToString(), dt.Rows[0]["LOTID"].ToString(),
-                dt.Rows[0]["QTY"].ToString(), dt.Rows[0]["MANUFACTURER"].ToString(), dt.Rows[0]["PRODUCTION_DATE"].ToString(), dt.Rows[0]["INCH_INFO"].ToString(), dt.Rows[0]["INPUT_TYPE"].ToString(), "MANUAL");
+                dt.Rows[0]["QTY"].ToString(), dt.Rows[0]["MANUFACTURER"].ToString(), dt.Rows[0]["PRODUCTION_DATE"].ToString(), dt.Rows[0]["INCH_INFO"].ToString(), dt.Rows[0]["INPUT_TYPE"].ToString(), "MANUAL", dt.Rows[0]["AMKOR_BATCH"].ToString());
 
             queryList.Add(query2);
 
@@ -896,7 +943,7 @@ namespace AMM
             if (nJudge == 0)
             {
                 AddSqlQuery(query2);
-                ReturnLogSave(string.Format("SetUnloadOut_Manual TB_PICK_INOUT_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}, REELID : {2}", strLinecode, strEquipid, strReelid));
+                //ReturnLogSave(string.Format("SetUnloadOut_Manual TB_PICK_INOUT_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}, REELID : {2}", strLinecode, strEquipid, strReelid));
                 return "TB_PICK_INOUT_HISTORY INSERT FAIL";
             }
 
@@ -905,7 +952,7 @@ namespace AMM
 
             if (strJudge == "NG")
             {
-                ReturnLogSave(string.Format("SetUnloadOut_Manual REEL DELETE FAIL LINECODE : {0}, EQUIPID : {1}, REELID : {2}", strLinecode, strEquipid, strReelid));
+                //ReturnLogSave(string.Format("SetUnloadOut_Manual REEL DELETE FAIL LINECODE : {0}, EQUIPID : {1}, REELID : {2}", strLinecode, strEquipid, strReelid));
                 return "REEL DELETE FAIL";
             }
 
@@ -968,7 +1015,7 @@ namespace AMM
                             && strResut.Contains("Enhance Location") != true && strResut.Contains("Already exist") != true)
                         {
                             Skynet_Set_Webservice_Faileddata(strMnbr, "", "CMS_OUT", strReelid, "", dt.Rows[0]["SID"].ToString(), dt.Rows[0]["MANUFACTURER"].ToString(), dt.Rows[0]["LOTID"].ToString(), "", dt.Rows[0]["QTY"].ToString(), "EA", strGroup);
-                            ReturnLogSave(string.Format("SetUnloadOut_Manual CMS_OUT WEBSERVICE FAIL LINECODE : {0}, EQUIPID : {1}, REELID : {2}", strLinecode, strEquipid, strReelid));
+                            //ReturnLogSave(string.Format("SetUnloadOut_Manual CMS_OUT WEBSERVICE FAIL LINECODE : {0}, EQUIPID : {1}, REELID : {2}", strLinecode, strEquipid, strReelid));
                             return "FAILED_WEBSERVICE";
                         }
 
@@ -978,7 +1025,7 @@ namespace AMM
                     catch (Exception ex)
                     {
                         Skynet_Set_Webservice_Faileddata(strMnbr, "", "CMS_OUT", strReelid, "", dt.Rows[0]["SID"].ToString(), dt.Rows[0]["MANUFACTURER"].ToString(), dt.Rows[0]["LOTID"].ToString(), "", dt.Rows[0]["QTY"].ToString(), "EA", strGroup);
-                        ReturnLogSave(string.Format("SetUnloadOut_Manual CMS_OUT WEBSERVICE EXCEPTION LINECODE : {0}, EQUIPID : {1}, REELID : {2}", strLinecode, strEquipid, strReelid));
+                        //ReturnLogSave(string.Format("SetUnloadOut_Manual CMS_OUT WEBSERVICE EXCEPTION LINECODE : {0}, EQUIPID : {1}, REELID : {2}", strLinecode, strEquipid, strReelid));
                         string strex = ex.ToString();
                         return "FAILED_WEBSERVICE";
                     }
@@ -986,7 +1033,7 @@ namespace AMM
                 else
                 {
                     Skynet_Set_Webservice_Faileddata(strMnbr, "", "CMS_OUT", strReelid, "", dt.Rows[0]["SID"].ToString(), dt.Rows[0]["MANUFACTURER"].ToString(), dt.Rows[0]["LOTID"].ToString(), "", dt.Rows[0]["QTY"].ToString(), "EA", strGroup);
-                    ReturnLogSave(string.Format("SetUnloadOut_Manual WEBSERVICE Disconnected LINECODE : {0}, EQUIPID : {1}, REELID : {2}", strLinecode, strEquipid, strReelid));
+                    //ReturnLogSave(string.Format("SetUnloadOut_Manual WEBSERVICE Disconnected LINECODE : {0}, EQUIPID : {1}, REELID : {2}", strLinecode, strEquipid, strReelid));
                 }
             }
 
@@ -1026,7 +1073,7 @@ namespace AMM
                         && strwebResut.Contains("Enhance Location") != true && strwebResut.Contains("Already exist") != true)
                     {
                         k = nWebCount;
-                        ReturnLogSave(string.Format("SetFailedWebservicedata WEBSERVICE FAIL EQUIPID : {0}", strEquipid));
+                        //ReturnLogSave(string.Format("SetFailedWebservicedata WEBSERVICE FAIL EQUIPID : {0}", strEquipid));
                         return "FAILED_WEBSERVICE";
                     }
                     else
@@ -1073,10 +1120,10 @@ namespace AMM
             if (nJudge == 0)
             {
                 AddSqlQuery(query2);
-                ReturnLogSave(string.Format("SetUnloadEnd TB_PICK_ID_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}, PICKINGID : {2}", strLinecode, strEquipid, strPickingid));
+                //ReturnLogSave(string.Format("SetUnloadEnd TB_PICK_ID_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}, PICKINGID : {2}", strLinecode, strEquipid, strPickingid));
                 return "TB_PICK_ID_HISTORY INSERT FAIL";
             }
-
+            
             /////PickID delete
             List<string> queryList2 = new List<string>();
             queryList2.Add(Delete_Pickidinfo(strLinecode, strEquipid, strPickingid));
@@ -1085,7 +1132,7 @@ namespace AMM
 
             if (nJudge == 0)
             {
-                ReturnLogSave(string.Format("SetUnloadEnd TB_PICK_ID_INFO DELETE FAIL LINECODE : {0}, EQUIPID : {1}, PICKINGID : {2}", strLinecode, strEquipid, strPickingid));
+                //ReturnLogSave(string.Format("SetUnloadEnd TB_PICK_ID_INFO DELETE FAIL LINECODE : {0}, EQUIPID : {1}, PICKINGID : {2}", strLinecode, strEquipid, strPickingid));
                 return "TB_PICK_ID_INFO DELETE FAIL";
             }
 
@@ -1097,58 +1144,143 @@ namespace AMM
 
             if (nJudge == 0)
             {
-                ReturnLogSave(string.Format("SetUnloadEnd TB_PICK_LIST_INFO DELETE FAIL LINECODE : {0}, EQUIPID : {1}, PICKINGID : {2}", strLinecode, strEquipid, strPickingid));
+                //ReturnLogSave(string.Format("SetUnloadEnd TB_PICK_LIST_INFO DELETE FAIL LINECODE : {0}, EQUIPID : {1}, PICKINGID : {2}", strLinecode, strEquipid, strPickingid));
                 return "TB_PICK_LIST_INFO DELETE FAIL";
             }
 
             return "OK";
         }
 
+        async public Task<string> GetWebServiceData(string url)
+        {            
+            string responseText = string.Empty;
+
+            byte[] arr = new byte[10];
+
+            HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(url);
+            request.Method = "GET";
+
+            
+
+            using (HttpWebResponse resp = (HttpWebResponse)request.GetResponse())
+            {
+                Stream respStream = resp.GetResponseStream();
+                using (StreamReader sr = new StreamReader(respStream))
+                {
+                    responseText = sr.ReadToEnd();
+                }
+            }
+
+            responseText = responseText.Replace("\"", "");
+            responseText = responseText.Replace("[", "");
+            responseText = responseText.Replace("]", "");
+            responseText = responseText.Replace("{", "");
+            responseText = responseText.Replace("}", "");
+            //string[] temp = responseText.Split(',');
+
+            return responseText;
+        }
+
+        async private Task<string> PutWebServiceData(string url)
+        {           
+            string responseText = string.Empty;
+
+            byte[] arr = new byte[10];
+
+            HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(url);
+            request.Method = "PUT";
+            request.ContentType = "text / plain";
+            request.ContentLength = arr.Length;
+            request.KeepAlive = false;
+
+            Stream dataStream = request.GetRequestStream();
+
+            dataStream.Write(arr, 0, arr.Length);
+
+            using (HttpWebResponse resp = (HttpWebResponse)request.GetResponse())
+            {
+                Stream respStream = resp.GetResponseStream();
+                using (StreamReader sr = new StreamReader(respStream))
+                {
+                    responseText = sr.ReadToEnd();
+                }
+            }
+
+            dataStream.Close();
+
+            //ReturnLogSave(responseText + "\t" + sw.ElapsedMilliseconds.ToString());
+            return responseText;
+        }
+
+
         System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
 
-        async private Task<string> UpdateBooking(string TowerName, string ReelID)
+        public void SetAmkorBatch(string WebResult)
         {
             try
             {
-                sw.Restart();
+
+                ReturnLogSave(WebResult);
+                if (WebResult != "")
+                {
+                    string[] BatchTemp = WebResult.Split(',');
+
+                    ReturnLogSave(WebResult);
+                    string Query = string.Format("UPDATE TB_MTL_INFO SET AMKOR_BATCH='{0}' WHERE [UID]='{1}' AND [SID]='{2}' and [LOTID]='{3}'",
+                        BatchTemp[2].Split(':')[1].Trim(), BatchTemp[0].Split(':')[1].Trim(), BatchTemp[1].Split(':')[1].Trim(), BatchTemp[3].Split(':')[1].Trim());
+
+                    ReturnLogSave(Query);
+                    AddSqlQuery(Query);
+                }
+            }
+            catch (Exception EX)
+            {
+                ReturnLogSave(EX.Message);
+            }
+            
+        }
+
+        public void AddGetBatch(string ReelID, string SID, string VendorLOT)
+        {
+            RPSData RPSDataTemp = new RPSData();
+
+            RPSDataTemp.URL = string.Format("http://10.131.3.43:8080/api/reel/amkor-batch/k4/json?REEL_ID={0}&SID={1}&VENDOR_LOT={2}", ReelID, SID, VendorLOT);
+            RPSDataTemp.Type = RPSDataType.Get;
+
+
+            ReturnLogSave(RPSDataTemp.URL);
+            RPS_Q.Enqueue(RPSDataTemp);
+        }
+
+        private void AddTowerOut(string LineCode, string EquipID, string TowerID, string UID, string SID, string LotID, string QTY, string Manufacturer, string ProductionDate, string InchInfo, string InputType, string AmkorBatch)
+        {
+            RPSData RPSDataTemp = new RPSData();
+
+            RPSDataTemp.URL = string.Format("http://10.131.3.43:8080/api/reel-tower/out/c-1/k4/{format}?LINE_CODE={0}&EQUIP_ID={1}&" +
+                "TOWER_NO={2}&UID={3}&SID={4}&LOTID={5}&QTY={6}&MANUFACTURER={7}&PRODUCTION_DATE={8}&INCH_INFO={9}&INPUT_TYPE={10}&AMKOR_BATCH={11}",
+                LineCode, EquipID, TowerID, UID, SID, LotID, QTY, Manufacturer, ProductionDate, InchInfo, InputType, AmkorBatch);
+            RPSDataTemp.Type = RPSDataType.Put;
+
+            RPS_Q.Enqueue(RPSDataTemp);
+        }
+
+
+        private void AddBooking(string TowerName, string ReelID)
+        {
+            try
+            {
+                RPSData RPSDataTemp = new RPSData();
 
                 string TowerNum = TowerName.Replace("TWR", "");
-                string url = string.Format("http://10.131.3.43:8080/api/invt/prod/booking/reel-tower/in/c-1/json?REEL_TOWER_IN={0}&REEL_ID={1}", TowerNum, ReelID);  //테스트 사이트
-                string responseText = string.Empty;
+                RPSDataTemp.URL = string.Format("http://10.131.3.43:8080/api/invt/prod/booking/reel-tower/in/c-1/json?REEL_TOWER_IN={0}&REEL_ID={1}", TowerNum, ReelID);
+                RPSDataTemp.Type = RPSDataType.Put;
 
-                byte[] arr = new byte[10];
-
-                HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(url);
-                request.Method = "PUT";
-                request.ContentType = "text / plain";
-                request.ContentLength = arr.Length;
-                request.KeepAlive = false;
-
-                Stream dataStream = request.GetRequestStream();
-
-                dataStream.Write(arr, 0, arr.Length);
-
-                using (HttpWebResponse resp = (HttpWebResponse)request.GetResponse())
-                {
-                    Stream respStream = resp.GetResponseStream();
-                    using (StreamReader sr = new StreamReader(respStream))
-                    {
-                        responseText = sr.ReadToEnd();
-                    }
-                }
-
-                dataStream.Close();
-
-                sw.Stop();
-
-                ReturnLogSave(responseText + "\t" + sw.ElapsedMilliseconds.ToString());
-                return responseText;
+                RPS_Q.Enqueue(RPSDataTemp);
             }
-            catch (Exception ex )
+            catch (Exception ex)
             {
-                ReturnLogSave(string.Format("UpdateBooking Fail : {0}", ex.Message));
+                //ReturnLogSave(string.Format("UpdateBooking Fail : {0}", ex.Message));
             }
-            return "";
         }
 
         public string SetLoadComplete(string strLinecode, string strEquipid, string strBcrinfo, bool bWebservice)
@@ -1163,7 +1295,7 @@ namespace AMM
             ///
 
 
-            ReturnLogSave(string.Format("SetLoadComplete {0}, {1}, {2}, {3}", strLinecode, strEquipid, strBcrinfo, bWebservice));
+            //ReturnLogSave(string.Format("SetLoadComplete {0}, {1}, {2}, {3}", strLinecode, strEquipid, strBcrinfo, bWebservice));
 
             var strReturn = "";
 
@@ -1201,17 +1333,18 @@ namespace AMM
             if (nJudge == 0)
             {
                 AddSqlQuery(query2);
-                ReturnLogSave(string.Format("SetLoadComplete TB_MTL_INFO INSERT FAIL LINECODE : {0}, EQUIPID : {1}, BARCODEINFO : {2}", strLinecode, strEquipid, strBcrinfo));
+                //ReturnLogSave(string.Format("SetLoadComplete TB_MTL_INFO INSERT FAIL LINECODE : {0}, EQUIPID : {1}, BARCODEINFO : {2}", strLinecode, strEquipid, strBcrinfo));
                 return "TB_MTL_INFO INSERT FAIL";
             }
-
-            RPS_Q.Enqueue(new RPSData(strEquipid, strInfo[1]));  //20220819 Web Service 형식으로 변경하여 적용
+            ReturnLogSave("Add Batch");
+            AddBooking(strEquipid, strInfo[1]);  //20220819 Web Service 형식으로 변경하여 적용
+            AddGetBatch(strInfo[1], strInfo[2], strInfo[3]);    
             DeleteHistory();
 
             //////////로그 저장 ///TB_PICK_INOUT_HISTORY
             List<string> queryList2 = new List<string>();
-            query3 = string.Format(@"INSERT INTO TB_PICK_INOUT_HISTORY (DATETIME,LINE_CODE,EQUIP_ID,PICKID,UID,STATUS,REQUESTOR,TOWER_NO,SID,LOTID,QTY,MANUFACTURER,PRODUCTION_DATE,INCH_INFO,INPUT_TYPE) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}','{11}','{12}','{13}','{14}')",
-                strSendtime, strLinecode, strEquipid, "", strInfo[1], "IN", "", strInfo[0], strInfo[2], strInfo[3], strInfo[4], strInfo[5], strInfo[6], strInfo[7], strInfo[8]);
+            query3 = string.Format(@"INSERT INTO TB_PICK_INOUT_HISTORY (DATETIME,LINE_CODE,EQUIP_ID,PICKID,UID,STATUS,REQUESTOR,TOWER_NO,SID,LOTID,QTY,MANUFACTURER,PRODUCTION_DATE,INCH_INFO,INPUT_TYPE,AMKOR_BATCH ) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}','{11}','{12}','{13}','{14}', '{15}')",
+                strSendtime, strLinecode, strEquipid, "", strInfo[1], "IN", "", strInfo[0], strInfo[2], strInfo[3], strInfo[4], strInfo[5], strInfo[6], strInfo[7], strInfo[8],"");
 
             queryList2.Add(query3);
 
@@ -1220,7 +1353,7 @@ namespace AMM
             if (nJudge == 0)
             {
                 AddSqlQuery(query3);
-                ReturnLogSave(string.Format("SetLoadComplete TB_PICK_INOUT_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}, BARCODEINFO : {2}", strLinecode, strEquipid, strBcrinfo));
+                //ReturnLogSave(string.Format("SetLoadComplete TB_PICK_INOUT_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}, BARCODEINFO : {2}", strLinecode, strEquipid, strBcrinfo));
                 return "TB_PICK_INOUT_HISTORY INSERT FAIL";
             }
 
@@ -1302,7 +1435,7 @@ namespace AMM
                     {
                         Skynet_Set_Webservice_Faileddata(strMnbr, "", "CMS_IN", strInfo[1], "", strInfo[2], strInfo[5], strInfo[3], "", strInfo[4], "EA", strGroup);
                         string strex = ex.ToString();
-                        ReturnLogSave(string.Format("SetLoadComplete WEBSERVICE EXCEPTION LINECODE : {0}, EQUIPID : {1}, BARCODEINFO : {2}", strLinecode, strEquipid, strBcrinfo));
+                        //ReturnLogSave(string.Format("SetLoadComplete WEBSERVICE EXCEPTION LINECODE : {0}, EQUIPID : {1}, BARCODEINFO : {2}", strLinecode, strEquipid, strBcrinfo));
                         return "FAILED_WEBSERVICE";
                     }
                 }
@@ -1312,7 +1445,7 @@ namespace AMM
 
                     if (nJudge2 == 0)
                     {
-                        ReturnLogSave(string.Format("SetLoadComplete WERBSERVICE Disconnected LINECODE : {0}, EQUIPID : {1}, BARCODEINFO : {2}", strLinecode, strEquipid, strBcrinfo));
+                        //ReturnLogSave(string.Format("SetLoadComplete WERBSERVICE Disconnected LINECODE : {0}, EQUIPID : {1}, BARCODEINFO : {2}", strLinecode, strEquipid, strBcrinfo));
                         strReturn = "NG";
                         return strReturn;
                     }
@@ -1332,7 +1465,7 @@ namespace AMM
 
             ////1.바코드 파싱
 
-            ReturnLogSave("SetSortComplete");
+            //ReturnLogSave("SetSortComplete");
 
             var strReturn = "";
 
@@ -1353,15 +1486,15 @@ namespace AMM
             string strSendtime = string.Format("{0}{1:00}{2:00}{3:00}{4:00}{5:00}", DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, DateTime.Now.Hour, DateTime.Now.Minute, DateTime.Now.Second);
 
             //////////로그 저장 ///TB_PICK_INOUT_HISTORY
-            query = string.Format(@"INSERT INTO TB_PICK_INOUT_HISTORY (DATETIME,LINE_CODE,EQUIP_ID,PICKID,UID,STATUS,REQUESTOR,TOWER_NO,SID,LOTID,QTY,MANUFACTURER,PRODUCTION_DATE,INCH_INFO,INPUT_TYPE) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}','{11}','{12}','{13}','{14}')",
-                strSendtime, strLinecode, strEquipid, "", strInfo[1], "IN", "", strInfo[0], strInfo[2], strInfo[3], strInfo[4], strInfo[5], strInfo[6], strInfo[7], strInfo[8]);
+            query = string.Format(@"INSERT INTO TB_PICK_INOUT_HISTORY (DATETIME,LINE_CODE,EQUIP_ID,PICKID,UID,STATUS,REQUESTOR,TOWER_NO,SID,LOTID,QTY,MANUFACTURER,PRODUCTION_DATE,INCH_INFO,INPUT_TYPE,AMKOR_BATCH) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}','{11}','{12}','{13}','{14}','{15}')",
+                strSendtime, strLinecode, strEquipid, "", strInfo[1], "IN", "", strInfo[0], strInfo[2], strInfo[3], strInfo[4], strInfo[5], strInfo[6], strInfo[7], strInfo[8],"");
 
             int nJudge = MSSql.SetData(query); ///return 확인 해서 false 값 날려 야 함.
 
             if (nJudge == 0)
             {
                 AddSqlQuery(query);
-                ReturnLogSave(string.Format("SetSortComplete TB_PICK_INOUT_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}, BARCODEINFO : {2}", strLinecode, strEquipid, strBcrinfo));
+                //ReturnLogSave(string.Format("SetSortComplete TB_PICK_INOUT_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}, BARCODEINFO : {2}", strLinecode, strEquipid, strBcrinfo));
                 return "TB_PICK_INOUT_HISTORY INSERT FAIL";
             }
             ///////////IT Webservice////////////
@@ -1389,14 +1522,14 @@ namespace AMM
                             && strResut.Contains("Enhance Location") != true && strResut.Contains("Already exist") != true)
                         {
                             Skynet_Set_Webservice_Faileddata(strMnbr, "", "CMS_IN", strInfo[1], "", strInfo[2], strInfo[5], strInfo[3], "", strInfo[4], "EA", strGroup);
-                            ReturnLogSave(string.Format("SetSortComplete WEBSERVICE CMS_IN FAIL LINECODE : {0}, EQUIPID : {1}, BARCODEINFO : {2}", strLinecode, strEquipid, strBcrinfo));
+                            //ReturnLogSave(string.Format("SetSortComplete WEBSERVICE CMS_IN FAIL LINECODE : {0}, EQUIPID : {1}, BARCODEINFO : {2}", strLinecode, strEquipid, strBcrinfo));
                             strReturn = "FAILED_WEBSERVICE";
                             return strReturn;
                         }
 
                         string str = SetFailedWebservicedata(strEquipid);
 
-                        ReturnLogSave(string.Format("SetSortComplete WEBSERVICE CMS_IN RETURN_VALUE : {3}, LINECODE : {0}, EQUIPID : {1}, BARCODEINFO : {2}", strLinecode, strEquipid, strBcrinfo, str));
+                        //ReturnLogSave(string.Format("SetSortComplete WEBSERVICE CMS_IN RETURN_VALUE : {3}, LINECODE : {0}, EQUIPID : {1}, BARCODEINFO : {2}", strLinecode, strEquipid, strBcrinfo, str));
                         strReturn = str;
 
                         return strReturn;
@@ -1404,7 +1537,7 @@ namespace AMM
                     catch (Exception ex)
                     {
                         Skynet_Set_Webservice_Faileddata(strMnbr, "", "CMS_IN", strInfo[1], "", strInfo[2], strInfo[5], strInfo[3], "", strInfo[4], "EA", strGroup);
-                        ReturnLogSave(string.Format("SetSortComplete WEBSERVICE CMS_IN EXCEPTION LINECODE : {0}, EQUIPID : {1}, BARCODEINFO : {2}, EXECPTION_CODE : {3}", strLinecode, strEquipid, strBcrinfo, ex.Message));
+                        //ReturnLogSave(string.Format("SetSortComplete WEBSERVICE CMS_IN EXCEPTION LINECODE : {0}, EQUIPID : {1}, BARCODEINFO : {2}, EXECPTION_CODE : {3}", strLinecode, strEquipid, strBcrinfo, ex.Message));
                         return "FAILED_WEBSERVICE";
                     }
                 }
@@ -1415,7 +1548,7 @@ namespace AMM
                     if (nJudge2 == 0)
                     {
                         strReturn = "NG";
-                        ReturnLogSave(string.Format("SetLoadComplete WERBSERVICE Disconnected LINECODE : {0}, EQUIPID : {1}, BARCODEINFO : {2}", strLinecode, strEquipid, strBcrinfo));
+                        //ReturnLogSave(string.Format("SetLoadComplete WERBSERVICE Disconnected LINECODE : {0}, EQUIPID : {1}, BARCODEINFO : {2}", strLinecode, strEquipid, strBcrinfo));
                         return strReturn;
                     }
                 }
@@ -1436,7 +1569,7 @@ namespace AMM
             ////1.바코드 파싱
             var strReturn = "";
 
-            ReturnLogSave("SetSortComplete");
+            //ReturnLogSave("SetSortComplete");
 
             if (info.manufacturer == string.Empty)
             {
@@ -1467,15 +1600,15 @@ namespace AMM
             string strSendtime = string.Format("{0}{1:00}{2:00}{3:00}{4:00}{5:00}", DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, DateTime.Now.Hour, DateTime.Now.Minute, DateTime.Now.Second);
 
             //////////로그 저장 ///TB_PICK_INOUT_HISTORY
-            query = string.Format(@"INSERT INTO TB_PICK_INOUT_HISTORY (DATETIME,LINE_CODE,EQUIP_ID,PICKID,UID,STATUS,REQUESTOR,TOWER_NO,SID,LOTID,QTY,MANUFACTURER,PRODUCTION_DATE,INCH_INFO,INPUT_TYPE) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}','{11}','{12}','{13}','{14}')",
-                strSendtime, info.linecode, info.equipid, "", strInfo[1], "IN", info.createby, strInfo[0], strInfo[2], strInfo[3], strInfo[4], strInfo[5], strInfo[6], strInfo[7], strInfo[8]);
+            query = string.Format(@"INSERT INTO TB_PICK_INOUT_HISTORY (DATETIME,LINE_CODE,EQUIP_ID,PICKID,UID,STATUS,REQUESTOR,TOWER_NO,SID,LOTID,QTY,MANUFACTURER,PRODUCTION_DATE,INCH_INFO,INPUT_TYPE,AMKOR_BATCH) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}','{11}','{12}','{13}','{14}','{15}')",
+                strSendtime, info.linecode, info.equipid, "", strInfo[1], "IN", info.createby, strInfo[0], strInfo[2], strInfo[3], strInfo[4], strInfo[5], strInfo[6], strInfo[7], strInfo[8],"");
 
             int nJudge = MSSql.SetData(query); ///return 확인 해서 false 값 날려 야 함.
 
             if (nJudge == 0)
             {
                 AddSqlQuery(query);
-                ReturnLogSave(string.Format("SetSortComplete TB_PICK_INOUT_HISTORY INSERT FAIL BARCODEINFO : {0}", strBcrinfo));
+                //ReturnLogSave(string.Format("SetSortComplete TB_PICK_INOUT_HISTORY INSERT FAIL BARCODEINFO : {0}", strBcrinfo));
                 return "TB_PICK_INOUT_HISTORY INSERT FAIL";
             }
 
@@ -1506,14 +1639,14 @@ namespace AMM
                         {
                             Skynet_Set_Webservice_Faileddata(strMnbr, strCreator, "CMS_IN", strInfo[1], "", strInfo[2], strInfo[5], strInfo[3], "", strInfo[4], "EA", strGroup);
                             strReturn = "FAILED_WEBSERVICE";
-                            ReturnLogSave(string.Format("SetSortComplete WEBSERVICE CMS_IN BARCODEINFO : {0}", strBcrinfo));
+                            //ReturnLogSave(string.Format("SetSortComplete WEBSERVICE CMS_IN BARCODEINFO : {0}", strBcrinfo));
                             return strReturn;
                         }
 
                         string str = SetFailedWebservicedata(info.equipid);
                         strReturn = str;
 
-                        ReturnLogSave(string.Format("SetSortComplete WEBSERVICE CMS_IN RETURN_VALUE : {0}, BARCODEINFO : {1}", str, strBcrinfo));
+                        //ReturnLogSave(string.Format("SetSortComplete WEBSERVICE CMS_IN RETURN_VALUE : {0}, BARCODEINFO : {1}", str, strBcrinfo));
 
                         return strReturn;
                     }
@@ -1521,7 +1654,7 @@ namespace AMM
                     {
                         Skynet_Set_Webservice_Faileddata(strMnbr, strCreator, "CMS_IN", strInfo[1], "", strInfo[2], strInfo[5], strInfo[3], "", strInfo[4], "EA", strGroup);
                         string strex = ex.ToString();
-                        ReturnLogSave(string.Format("SetSortComplete WEBSERVICE CMS_IN EXCEPTION BARCODEINFO : {0}, EXECPTION_CODE : {1}", strBcrinfo, ex.Message));
+                        //ReturnLogSave(string.Format("SetSortComplete WEBSERVICE CMS_IN EXCEPTION BARCODEINFO : {0}, EXECPTION_CODE : {1}", strBcrinfo, ex.Message));
                         return "FAILED_WEBSERVICE";
                     }
                 }
@@ -1531,7 +1664,7 @@ namespace AMM
 
                     if (nJudge2 == 0)
                     {
-                        ReturnLogSave(string.Format("SetSortComplete WERBSERVICE Disconnected BARCODEINFO : {0}", strBcrinfo));
+                        //ReturnLogSave(string.Format("SetSortComplete WERBSERVICE Disconnected BARCODEINFO : {0}", strBcrinfo));
                         strReturn = "NG";
                         return strReturn;
                     }
@@ -1552,7 +1685,7 @@ namespace AMM
 
             if (dt.Rows.Count < 1)
             {
-                ReturnLogSave(string.Format("Get_Sid_Location NO DATA SID# : {0}", sid));
+                //ReturnLogSave(string.Format("Get_Sid_Location NO DATA SID# : {0}", sid));
                 return "NO_DATA";
             }
 
@@ -1613,13 +1746,13 @@ namespace AMM
             strurl = string.Format("http://cim_service.amkor.co.kr:8080/ysj/material/txn_cms?mnbr={0}&badge={1}&action_type={2}&matl_id={3}&matl_type={4}&matl_sid={5}&matl_vendorlot={6}&matl_vendorname={7}&matl_batch={8}&matl_expired_date={9}&matl_qty={10}&matl_qty_unit={11}",
                 strMnbr, strBadge, strAction, strReelID, strMtlType, strSID, strBatch, strVendor, strBatch, strExpireddate, strQty, strUnit);
 
-            ReturnLogSave(strurl);
+            //ReturnLogSave(strurl);
 
             var res_ = await Fnc_RunAsync(strurl);
 
             //var res_ = Fnc_RunAsync(strurl);
 
-            //ReturnLogSave(strurl);
+            ////ReturnLogSave(strurl);
 
             Fnc_WebServiceLog(strurl, res_);
             
@@ -1648,6 +1781,7 @@ namespace AMM
 
         public void Fnc_WebServiceLog(string strMessage, string strResult)
         {
+            /*
             System.IO.DirectoryInfo di = new System.IO.DirectoryInfo(@"C:\Log");
             if (!di.Exists) { di.Create(); }
 
@@ -1660,11 +1794,12 @@ namespace AMM
             string strSave;
             strSave = strHead + ',' + strMessage + ',' + strResult;
             Fnc_WriteFile(strPath, strSave);
+            */
         }
 
         public void ReturnLogSave(string msg)
         {
-            /*
+            
             System.IO.DirectoryInfo di = new System.IO.DirectoryInfo(@"C:\Log\ReturnLog");
             if (!di.Exists) { di.Create(); }
 
@@ -1677,16 +1812,16 @@ namespace AMM
             string strSave;
             strSave = strHead + msg;
             Fnc_WriteFile(strPath, strSave);
-            */
+            
         }
 
         public void Fnc_WriteFile(string strFileName, string strLine)
         {
-            using (System.IO.StreamWriter file =
-           new System.IO.StreamWriter(strFileName, true))
-            {
-                file.WriteLine(strLine);
-            }
+           // using (System.IO.StreamWriter file =
+           //new System.IO.StreamWriter(strFileName, true))
+           // {
+           //     file.WriteLine(strLine);
+           // }
         }
 
         public async Task<string> Fnc_RunAsync(string strKey)
@@ -1733,7 +1868,7 @@ namespace AMM
             if (nJudge == 0)
             {
                 AddSqlQuery(query1);
-                ReturnLogSave(string.Format("SetPickIDNo TB_IDNUNMER_INFO INSERT FAIL LINECODE : {0}, EQUIPID : {1}, PREFIX : {2}, NUMBER : {3}", strLinecode, strEquipid, strPrefix, strNumber));
+                //ReturnLogSave(string.Format("SetPickIDNo TB_IDNUNMER_INFO INSERT FAIL LINECODE : {0}, EQUIPID : {1}, PREFIX : {2}, NUMBER : {3}", strLinecode, strEquipid, strPrefix, strNumber));
                 return "TB_IDNUNMER_INFO INSERT FAIL";
             }
 
@@ -1755,7 +1890,7 @@ namespace AMM
             if (nJudge == 0)
             {
                 AddSqlQuery(query);
-                ReturnLogSave(string.Format("SetPickIDNo TB_IDNUNMER_INFO UPDATE FAIL LINECODE : {0}, EQUIPID : {1}, NUMBER : {2}", strLinecode, strEquipid, strNumber));
+                //ReturnLogSave(string.Format("SetPickIDNo TB_IDNUNMER_INFO UPDATE FAIL LINECODE : {0}, EQUIPID : {1}, NUMBER : {2}", strLinecode, strEquipid, strNumber));
                 return "TB_IDNUNMER_INFO UPDATE FAIL";
             }
 
@@ -1889,7 +2024,7 @@ namespace AMM
             if (nJudge == 0)
             {
                 AddSqlQuery(query1);
-                ReturnLogSave(string.Format("SetEqEvent TB_EVENT_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}, ERRORTYPE : {2}", strLinecode, strEquipid, strErrortype));
+                //ReturnLogSave(string.Format("SetEqEvent TB_EVENT_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}, ERRORTYPE : {2}", strLinecode, strEquipid, strErrortype));
                 return "TB_EVENT_HISTORY INSERT FAIL";
             }
 
@@ -1932,7 +2067,7 @@ namespace AMM
             if (nJudge == 0)
             {
                 AddSqlQuery(query);
-                ReturnLogSave(string.Format("SetEquipmentInfo TB_SET_EQUIP INSERT FAIL LINECODE : {0}, EQUIPID : {1}, INDEX : {2}", strLinecode, strEquipid, strIndex));
+                //ReturnLogSave(string.Format("SetEquipmentInfo TB_SET_EQUIP INSERT FAIL LINECODE : {0}, EQUIPID : {1}, INDEX : {2}", strLinecode, strEquipid, strIndex));
                 return "TB_SET_EQUIP INSERT FAIL";
             }
 
@@ -1987,7 +2122,7 @@ namespace AMM
             if (nJudge == 0)
             {
                 AddSqlQuery(query);
-                ReturnLogSave(string.Format("SetPicking_Readyinfo TB_PICK_READY_INFO INSERT FAIL LINECODE : {0}, EQUIPID : {1}, PICKID : {2}", strLinecode, strEquipid, strPickid));
+                //ReturnLogSave(string.Format("SetPicking_Readyinfo TB_PICK_READY_INFO INSERT FAIL LINECODE : {0}, EQUIPID : {1}, PICKID : {2}", strLinecode, strEquipid, strPickid));
                 return "TB_PICK_READY_INFO INSERT FAIL";
             }
 
@@ -2007,12 +2142,14 @@ namespace AMM
             //if (GetPickingReadyinfo(strUid) == "NG")
             //    return "Duplicate";
 
+            DataTable dt = GetMTLInfo_UID(strLinecode, strEquipid, strUid);
+
             List<string> queryList = new List<string>();
 
             string query = "";
-
-            query = string.Format(@"INSERT INTO TB_PICK_LIST_INFO (LINE_CODE,EQUIP_ID,PICKID,UID,STATUS,REQUESTOR,TOWER_NO,SID,LOTID,QTY,MANUFACTURER,PRODUCTION_DATE,INCH_INFO,INPUT_TYPE,ORDER_TYPE) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}','{11}','{12}','{13}','{14}')",
-                strLinecode, strEquipid, strPickid, strUid, "READY", strRequestor, strTwrno, strSid, strLotid, strQty, strManufacturer, strProductiondate, strInchinfo, strInputtype, strOrdertype);
+            
+            query = string.Format(@"INSERT INTO TB_PICK_LIST_INFO (LINE_CODE,EQUIP_ID,PICKID,UID,STATUS,REQUESTOR,TOWER_NO,SID,LOTID,QTY,MANUFACTURER,PRODUCTION_DATE,INCH_INFO,INPUT_TYPE,ORDER_TYPE,AMKOR_BATCH) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}','{11}','{12}','{13}','{14}','{15}')",
+                strLinecode, strEquipid, strPickid, strUid, "READY", strRequestor, strTwrno, strSid, strLotid, strQty, strManufacturer, strProductiondate, strInchinfo, strInputtype, strOrdertype, dt.Rows.Count==0?"":dt.Rows[0]["AMKOR_BATCH"] ==null ? "" : dt.Rows[0]["AMKOR_BATCH"].ToString());
 
             queryList.Add(query);
             int nJudge = MSSql.SetData(queryList); ///return 확인 해서 false 값 날려 야 함.
@@ -2020,7 +2157,7 @@ namespace AMM
             if (nJudge == 0)
             {
                 AddSqlQuery(query);
-                ReturnLogSave(string.Format("SetPicking_Listinfo TB_PICK_LIST_INFO INSERT FAIL LINECODE : {0}, EQUIPID : {1}, PICKID : {2}", strLinecode, strEquipid, strPickid));
+                //ReturnLogSave(string.Format("SetPicking_Listinfo TB_PICK_LIST_INFO INSERT FAIL LINECODE : {0}, EQUIPID : {1}, PICKID : {2}", strLinecode, strEquipid, strPickid));
                 return "TB_PICK_LIST_INFO INSERT FAIL";
             }
 
@@ -2079,13 +2216,13 @@ namespace AMM
 
             if (dt.Rows.Count == 0)
             {
-                ReturnLogSave(string.Format("GetPickingListinfo TB_PICK_LIST_INFO SELECT FAIL UID : {0}", uid));
+                //ReturnLogSave(string.Format("GetPickingListinfo TB_PICK_LIST_INFO SELECT FAIL UID : {0}", uid));
                 return "ERROR";
             }
 
             if (dt.Rows[0]["CNT"].ToString() == "99")
             {
-                ReturnLogSave(string.Format("GetPickingListinfo TB_PICK_LIST_INFO CNT = 99 UID : {0}", uid));
+                //ReturnLogSave(string.Format("GetPickingListinfo TB_PICK_LIST_INFO CNT = 99 UID : {0}", uid));
                 return "NG";
             }
             else
@@ -2101,13 +2238,13 @@ namespace AMM
 
             if (dt.Rows.Count == 0)
             {
-                ReturnLogSave(string.Format("GetPickingReadyinfo TB_PICK_READY_INFO SELECT FAIL UID : {0}", uid));
+                //ReturnLogSave(string.Format("GetPickingReadyinfo TB_PICK_READY_INFO SELECT FAIL UID : {0}", uid));
                 return "ERROR";
             }
 
             if (dt.Rows[0]["CNT"].ToString() == "99")
             {
-                ReturnLogSave(string.Format("GetPickingReadyinfo TB_PICK_READY_INFO CNT = 99 UID : {0}", uid));
+                //ReturnLogSave(string.Format("GetPickingReadyinfo TB_PICK_READY_INFO CNT = 99 UID : {0}", uid));
                 return "TB_PICK_READY_INFO CNT = 99";
             }
             else
@@ -2144,7 +2281,7 @@ namespace AMM
 
             if (str == "NG")
             {
-                ReturnLogSave(string.Format("SetUserInfo TB_USER_INFO DELETE FAIL UID : {0}", sid));
+                //ReturnLogSave(string.Format("SetUserInfo TB_USER_INFO DELETE FAIL UID : {0}", sid));
                 return "TB_USER_INFO DELETE FAIL";// str;
             }
 
@@ -2157,7 +2294,7 @@ namespace AMM
 
             if (nJudge == 0)
             {
-                ReturnLogSave(string.Format("SetUserInfo TB_USER_INFO INSERT FAIL UID : {0}", sid));
+                //ReturnLogSave(string.Format("SetUserInfo TB_USER_INFO INSERT FAIL UID : {0}", sid));
                 return "TB_USER_INFO INSERT FAIL";
             }
 
@@ -2272,7 +2409,7 @@ namespace AMM
             if (nJudge == 0)
             {
                 AddSqlQuery(query);
-                ReturnLogSave(string.Format("Delete_EquipmentInfo2 TB_SET_EQUIP DELETE FAIL LINECODE : {0}, EQUIPID : {1}", strLinecode, strEquipid));
+                //ReturnLogSave(string.Format("Delete_EquipmentInfo2 TB_SET_EQUIP DELETE FAIL LINECODE : {0}, EQUIPID : {1}", strLinecode, strEquipid));
                 return "TB_SET_EQUIP DELETE FAIL";
             }
 
@@ -2290,7 +2427,7 @@ namespace AMM
             if (nJudge == 0)
             {
                 AddSqlQuery(query);
-                ReturnLogSave(string.Format("Delete_PickReadyinfo TB_PICK_READY_INFO DELETE FAIL LINECODE : {0}, PICKID : {1}", strLinecode, strPickid));
+                //ReturnLogSave(string.Format("Delete_PickReadyinfo TB_PICK_READY_INFO DELETE FAIL LINECODE : {0}, PICKID : {1}", strLinecode, strPickid));
                 return "TB_PICK_READY_INFO DELETE FAIL";
             }
 
@@ -2308,7 +2445,7 @@ namespace AMM
             if (nJudge == 0)
             {
                 AddSqlQuery(query);
-                ReturnLogSave(string.Format("Delete_PickReadyinfo_ReelID TB_PICK_READY_INFO DELETE FAIL LINECODE : {0}, REELID : {1}", strLinecode, strReelid));
+                //ReturnLogSave(string.Format("Delete_PickReadyinfo_ReelID TB_PICK_READY_INFO DELETE FAIL LINECODE : {0}, REELID : {1}", strLinecode, strReelid));
                 return "TB_PICK_READY_INFO DELETE FAIL";
             }
 
@@ -2326,7 +2463,7 @@ namespace AMM
             if (nJudge == 0)
             {
                 AddSqlQuery(query);
-                ReturnLogSave(string.Format("Delete_Picklistinfo_Reelid TB_PICK_LIST_INFO DELETE FAIL LINECODE : {0}, REELID : {1}", strLinecode, strReelid));
+                //ReturnLogSave(string.Format("Delete_Picklistinfo_Reelid TB_PICK_LIST_INFO DELETE FAIL LINECODE : {0}, REELID : {1}", strLinecode, strReelid));
                 return "TB_PICK_LIST_INFO DELETE FAIL";
             }
 
@@ -2376,7 +2513,7 @@ namespace AMM
             if (nJudge == 0)
             {
                 AddSqlQuery(query);
-                ReturnLogSave(string.Format("Delete_PickIDNo TB_IDNUNMER_INFO DELETE FAIL LINECODE : {0}, EQUIPID : {1}", strLinecode, strEquipid));
+                //ReturnLogSave(string.Format("Delete_PickIDNo TB_IDNUNMER_INFO DELETE FAIL LINECODE : {0}, EQUIPID : {1}", strLinecode, strEquipid));
                 return "TB_IDNUNMER_INFO DELETE FAIL";
             }
 
@@ -2410,7 +2547,7 @@ namespace AMM
             if (nJudge == 0)
             {
                 AddSqlQuery(query2);
-                ReturnLogSave(string.Format("Delete_Pickidinfo2 TB_PICK_ID_HISTORY Delete fail Linecode:{0}, Equipid:{1}, Pickid:{2}", strLinecode, strEquipid, strPickid));
+                //ReturnLogSave(string.Format("Delete_Pickidinfo2 TB_PICK_ID_HISTORY Delete fail Linecode:{0}, Equipid:{1}, Pickid:{2}", strLinecode, strEquipid, strPickid));
                 return "NG";
             }
 
@@ -2456,7 +2593,7 @@ namespace AMM
             if (nJudge == 0)
             {
                 AddSqlQuery(query);
-                ReturnLogSave(string.Format("Delete_MTL_Tower TB_MTL_INFO DELETE FAIL EQUIPID : {0}", strEqid));
+                //ReturnLogSave(string.Format("Delete_MTL_Tower TB_MTL_INFO DELETE FAIL EQUIPID : {0}", strEqid));
                 return "TB_MTL_INFO DELETE FAIL";
             }
 
@@ -2487,7 +2624,7 @@ namespace AMM
             if (nJudge == 0)
             {
                 AddSqlQuery(query1);
-                ReturnLogSave(string.Format("User_Register TB_USER_INFO INSERT FAIL SID : {0}", sid));
+                //ReturnLogSave(string.Format("User_Register TB_USER_INFO INSERT FAIL SID : {0}", sid));
                 return "TB_USER_INFO INSERT FAIL";
             }
 
@@ -2543,7 +2680,7 @@ namespace AMM
             if (nJudge == 0)
             {
                 AddSqlQuery(query1);
-                ReturnLogSave(string.Format("Set_Twr_Use TB_TOWER_USE INSERT FAIL TOWER : {0}, USER : {1}", strTower, strUse));
+                //ReturnLogSave(string.Format("Set_Twr_Use TB_TOWER_USE INSERT FAIL TOWER : {0}, USER : {1}", strTower, strUse));
                 return "TB_TOWER_USE INSERT FAIL";
             }
 
@@ -2631,7 +2768,7 @@ namespace AMM
 
             if (nCount == 0)
             {
-                ReturnLogSave(string.Format("Check_LT_User TB_USER_INFO_LT NO DATA SID : {0}", SID));
+                //ReturnLogSave(string.Format("Check_LT_User TB_USER_INFO_LT NO DATA SID : {0}", SID));
                 return "NO DATA";
             }
 
@@ -2662,7 +2799,7 @@ namespace AMM
             if (nJudge == 0)
             {
                 AddSqlQuery(query1);
-                ReturnLogSave(string.Format("Set_Twr_State TB_TOWER_STATE INSERT FAIL LINECODE : {0}, EQUIPID : {1} ", strLinecode, strEqid));
+                //ReturnLogSave(string.Format("Set_Twr_State TB_TOWER_STATE INSERT FAIL LINECODE : {0}, EQUIPID : {1} ", strLinecode, strEqid));
                 return "TB_TOWER_STATE INSERT FAIL";
             }
 
