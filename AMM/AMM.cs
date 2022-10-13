@@ -104,8 +104,9 @@ namespace AMM
                 }
 
                 ReturnLogSave(string.Format("RPS_Q Count : {0}", RPS_Q.Count));
+                System.Threading.Thread.Sleep(1000);
             }
-            System.Threading.Thread.Sleep(1000);
+            
         }
 
 
@@ -875,39 +876,39 @@ namespace AMM
                                                                 //220823 8, 9 그룹 추가
 
             
-            if (strMnbr != "")
-            {            
-                bWebservice = false;
-                if (bWebservice)
-                {
-                    try
-                    {                        
-                        var taskResut = Fnc_InoutTransaction(strMnbr, dt.Rows[0]["REQUESTOR"].ToString(), "CMS_OUT", strReelid, "", dt.Rows[0]["SID"].ToString(), dt.Rows[0]["MANUFACTURER"].ToString(), dt.Rows[0]["LOTID"].ToString(), "", dt.Rows[0]["QTY"].ToString(), "EA");
-                        strResut = taskResut.Result;
+                if (strMnbr != "")
+                {            
+                    bWebservice = false;
+                    if (bWebservice)
+                    {
+                        try
+                        {                        
+                            var taskResut = Fnc_InoutTransaction(strMnbr, dt.Rows[0]["REQUESTOR"].ToString(), "CMS_OUT", strReelid, "", dt.Rows[0]["SID"].ToString(), dt.Rows[0]["MANUFACTURER"].ToString(), dt.Rows[0]["LOTID"].ToString(), "", dt.Rows[0]["QTY"].ToString(), "EA");
+                            strResut = taskResut.Result;
                         
-                        if (strResut.Contains("Success") != true && strResut.Contains("Same Status") != true
-                            && strResut.Contains("Enhance Location") != true && strResut.Contains("Already exist") != true)
+                            if (strResut.Contains("Success") != true && strResut.Contains("Same Status") != true
+                                && strResut.Contains("Enhance Location") != true && strResut.Contains("Already exist") != true)
+                            {
+                                Skynet_Set_Webservice_Faileddata(strMnbr, dt.Rows[0]["REQUESTOR"].ToString(), "CMS_OUT", strReelid, "", dt.Rows[0]["SID"].ToString(), dt.Rows[0]["MANUFACTURER"].ToString(), dt.Rows[0]["LOTID"].ToString(), "", dt.Rows[0]["QTY"].ToString(), "EA", strGroup);
+                                return "FAILED_WEBSERVICE";
+                            }
+
+                            string strReturn = SetFailedWebservicedata(strEquipid);
+
+                            return strReturn;
+                        }
+                        catch (Exception ex)
                         {
                             Skynet_Set_Webservice_Faileddata(strMnbr, dt.Rows[0]["REQUESTOR"].ToString(), "CMS_OUT", strReelid, "", dt.Rows[0]["SID"].ToString(), dt.Rows[0]["MANUFACTURER"].ToString(), dt.Rows[0]["LOTID"].ToString(), "", dt.Rows[0]["QTY"].ToString(), "EA", strGroup);
+                            string strex = ex.ToString();
                             return "FAILED_WEBSERVICE";
                         }
-
-                        string strReturn = SetFailedWebservicedata(strEquipid);
-
-                        return strReturn;
                     }
-                    catch (Exception ex)
+                    else
                     {
                         Skynet_Set_Webservice_Faileddata(strMnbr, dt.Rows[0]["REQUESTOR"].ToString(), "CMS_OUT", strReelid, "", dt.Rows[0]["SID"].ToString(), dt.Rows[0]["MANUFACTURER"].ToString(), dt.Rows[0]["LOTID"].ToString(), "", dt.Rows[0]["QTY"].ToString(), "EA", strGroup);
-                        string strex = ex.ToString();
-                        return "FAILED_WEBSERVICE";
                     }
                 }
-                else
-                {
-                    Skynet_Set_Webservice_Faileddata(strMnbr, dt.Rows[0]["REQUESTOR"].ToString(), "CMS_OUT", strReelid, "", dt.Rows[0]["SID"].ToString(), dt.Rows[0]["MANUFACTURER"].ToString(), dt.Rows[0]["LOTID"].ToString(), "", dt.Rows[0]["QTY"].ToString(), "EA", strGroup);
-                }
-            }
 
             }
             catch (Exception ex)
@@ -1219,13 +1220,12 @@ namespace AMM
         {
             try
             {
+                ReturnLogSave("SetAmkorBatch(" + WebResult + ")");
 
-                ReturnLogSave(WebResult);
                 if (WebResult != "")
                 {
                     string[] BatchTemp = WebResult.Split(',');
 
-                    ReturnLogSave(WebResult);
                     string Query = string.Format("UPDATE TB_MTL_INFO SET AMKOR_BATCH='{0}' WHERE [UID]='{1}' AND [SID]='{2}' and [LOTID]='{3}'",
                         BatchTemp[2].Split(':')[1].Trim(), BatchTemp[0].Split(':')[1].Trim(), BatchTemp[1].Split(':')[1].Trim(), BatchTemp[3].Split(':')[1].Trim());
 
@@ -1817,11 +1817,11 @@ namespace AMM
 
         public void Fnc_WriteFile(string strFileName, string strLine)
         {
-           // using (System.IO.StreamWriter file =
-           //new System.IO.StreamWriter(strFileName, true))
-           // {
-           //     file.WriteLine(strLine);
-           // }
+            using (System.IO.StreamWriter file =
+           new System.IO.StreamWriter(strFileName, true))
+            {
+                file.WriteLine(strLine);
+            }
         }
 
         public async Task<string> Fnc_RunAsync(string strKey)
