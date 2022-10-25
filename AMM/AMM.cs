@@ -72,38 +72,50 @@ namespace AMM
             SQL_Q.Enqueue(temp);
         }
 
-        public void RPSThreadStart()
+        public async void RPSThreadStartAsync()
         {
             while(true)
             {
-                if(RPS_Q.Count > 0)
-                {
-                    RPSData tempData = RPS_Q.Dequeue();
-                    string res = string.Empty;                    
 
-                    if(tempData.Type == RPSDataType.Get)
+                ReturnLogSave(string.Format("RPS_Q Count : {0}", RPS_Q.Count));
+                if (RPS_Q.Count > 0)
+                {
+                    RPSData tempData = RPS_Q.Peek();
+                    string res ="";
+                    ReturnLogSave("1 :" + tempData.Type.ToString() + " :: " + tempData.URL);
+
+                    if (tempData.Type == RPSDataType.Get)
                     {
-                        res = GetWebServiceData(tempData.URL).Result;
-                        
-                        if(tempData.URL.Contains("amkor-batch") == true && res != "")
+                        ReturnLogSave("2 : " + tempData.URL);
+                         res = GetWebServiceData(tempData.URL);
+                        ReturnLogSave("2 : " + tempData.URL + ":::" + res) ;
+
+                        if (tempData.URL.Contains("amkor-batch") == true)
                         {
+                            ReturnLogSave("4");
                             SetAmkorBatch(res);
                         }
                         else
                         {
 
                         }
+                        RPS_Q.Dequeue();
                     }
                     else
                     {
-                        res = PutWebServiceData(tempData.URL).Result;
+                        ReturnLogSave("3");
+                        res = PutWebServiceData(tempData.URL);
 
                         if (res == "")
                             RPS_Q.Enqueue(tempData);
+                        else
+                        {
+                            RPS_Q.Dequeue();
+                        }
                     }
                 }
 
-                ReturnLogSave(string.Format("RPS_Q Count : {0}", RPS_Q.Count));
+                
                 System.Threading.Thread.Sleep(1000);
             }
             
@@ -170,7 +182,7 @@ namespace AMM
             if(DBThread.IsAlive == false)
                 DBThread.Start();
 
-            RPSThread = new System.Threading.Thread(RPSThreadStart);
+            RPSThread = new System.Threading.Thread(RPSThreadStartAsync);
 
             if (RPSThread.IsAlive == false)
                 RPSThread.Start();
@@ -914,6 +926,7 @@ namespace AMM
             catch (Exception ex)
             {
                 ReturnLogSave(ex.Message);
+                ReturnLogSave(ex.Source);
             }
             return "OK";
         }
@@ -1152,7 +1165,7 @@ namespace AMM
             return "OK";
         }
 
-        async public Task<string> GetWebServiceData(string url)
+        public string GetWebServiceData(string url)
         {            
             string responseText = string.Empty;
 
@@ -1182,7 +1195,7 @@ namespace AMM
             return responseText;
         }
 
-        async private Task<string> PutWebServiceData(string url)
+        private string PutWebServiceData(string url)
         {           
             string responseText = string.Empty;
 
@@ -1220,6 +1233,7 @@ namespace AMM
         {
             try
             {
+                ReturnLogSave("5");
                 ReturnLogSave("SetAmkorBatch(" + WebResult + ")");
 
                 if (WebResult != "")
@@ -1235,6 +1249,7 @@ namespace AMM
             }
             catch (Exception EX)
             {
+
                 ReturnLogSave(EX.Message);
             }
             
@@ -1244,12 +1259,21 @@ namespace AMM
         {
             RPSData RPSDataTemp = new RPSData();
 
-            RPSDataTemp.URL = string.Format("http://10.131.3.43:8080/api/reel/amkor-batch/k4/json?REEL_ID={0}&SID={1}&VENDOR_LOT={2}", ReelID, SID, VendorLOT);
-            RPSDataTemp.Type = RPSDataType.Get;
+            try
+            {
+                RPSDataTemp.URL = string.Format("http://10.131.3.43:8080/api/reel/amkor-batch/k4/json?REEL_ID={0}&SID={1}&VENDOR_LOT={2}", ReelID, SID, VendorLOT);
 
+                RPSDataTemp.Type = RPSDataType.Get;
+                ReturnLogSave(RPSDataTemp.URL);
 
-            ReturnLogSave(RPSDataTemp.URL);
-            RPS_Q.Enqueue(RPSDataTemp);
+                RPS_Q.Enqueue(RPSDataTemp);
+            }
+            catch (Exception ex)
+            {
+                ReturnLogSave(ex.Message);
+            }
+            
+            
         }
 
         private void AddTowerOut(string LineCode, string EquipID, string TowerID, string UID, string SID, string LotID, string QTY, string Manufacturer, string ProductionDate, string InchInfo, string InputType, string AmkorBatch)
@@ -1811,7 +1835,7 @@ namespace AMM
 
             string strSave;
             strSave = strHead + msg;
-            Fnc_WriteFile(strPath, strSave);
+            //Fnc_WriteFile(strPath, strSave);
             
         }
 
