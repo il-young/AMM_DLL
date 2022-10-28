@@ -773,8 +773,9 @@ namespace AMM
             //queryList1.Add(Delete_Picklistinfo_Reelid(strLinecode, strEquipid, strReelid));
             //query1 = string.Format(@"INSERT INTO TB_PICK_LIST_INFO (LINE_CODE,EQUIP_ID,PICKID,UID,STATUS,REQUESTOR) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}')",
             //    strLinecode, strEquipid, strPickingid, strReelid, "OUT", strRequestor);
-
-            query1 = string.Format(@"UPDATE TB_PICK_LIST_INFO SET STATUS='{0}' WHERE UID='{1}'", "OUT", strReelid);
+            
+            //20221028
+            query1 = string.Format(@"UPDATE TB_PICK_LIST_INFO SET STATUS='{0}', LAST_UPDATE_TIME=getdate()  WHERE UID='{1}'", "OUT", strReelid);
 
             queryList1.Add(query1);
 
