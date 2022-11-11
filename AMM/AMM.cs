@@ -791,15 +791,7 @@ namespace AMM
 
             
 
-            ////자재 삭제          
-            string strJudge = Delete_MTL_Info(strReelid);
-
-            if (strJudge == "NG")
-            {
-                //ReturnLogSave(string.Format("SetUnloadOut DELETE FAIL LINECODE : {0}, EQUIPID : {1}, REELID : {2}", strLinecode, strEquipid, strReelid));
-                return string.Format("{0} DELETE FAIL", strReelid);
-            }
-
+            
             ///////////자재 정보 가져 오기 //TB_PICK_LIST_INFO
             string query = "";
 
@@ -839,12 +831,23 @@ namespace AMM
                 //ReturnLogSave(string.Format("SetUnloadOut TB_PICK_LIST_INFO Select FAIL LINECODE : {0}, EQUIPID : {1}, REELID : {2}", strLinecode, strEquipid, strReelid));
             }
 
-            
 
 
-            //////////////IT Webservice////////////
-            /////모든 MNBR을 넣어 줘야 함.
-            string strMnbr = "", strResut = "", strTwrno = "", strGroup = "";
+            ////자재 삭제          
+            string strJudge = Delete_MTL_Info(strReelid);
+
+            if (strJudge == "NG")
+            {
+                //ReturnLogSave(string.Format("SetUnloadOut DELETE FAIL LINECODE : {0}, EQUIPID : {1}, REELID : {2}", strLinecode, strEquipid, strReelid));
+                return string.Format("{0} DELETE FAIL", strReelid);
+            }
+
+
+
+
+                //////////////IT Webservice////////////
+                /////모든 MNBR을 넣어 줘야 함.
+                string strMnbr = "", strResut = "", strTwrno = "", strGroup = "";
             strTwrno = dt.Rows[0]["TOWER_NO"].ToString();
             strGroup = strTwrno.Substring(2, 1);
 
