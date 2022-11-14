@@ -90,7 +90,7 @@ namespace AMM
                         res = GetWebServiceData(tempData.URL);
                         ReturnLogSave("2 : " + tempData.URL + ":::" + res);
 
-                        if (tempData.URL.Contains("amkor-batch") == true)
+                        if (tempData.URL.Contains("amkor-batch") == true && res != "EMPTY")
                         {
                             ReturnLogSave("4");
                             SetAmkorBatch(res);
@@ -99,7 +99,9 @@ namespace AMM
                         {
 
                         }
-                        RPS_Q.Dequeue();
+
+                        if (res != "EMPTY")
+                            RPS_Q.Dequeue();
                     }
                     else
                     {
@@ -1174,30 +1176,39 @@ namespace AMM
         {
             string responseText = string.Empty;
 
-            byte[] arr = new byte[10];
-
-            HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(url);
-            request.Method = "GET";
-
-
-
-            using (HttpWebResponse resp = (HttpWebResponse)request.GetResponse())
+            try
             {
-                Stream respStream = resp.GetResponseStream();
-                using (StreamReader sr = new StreamReader(respStream))
+                byte[] arr = new byte[10];
+
+                HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(url);
+                request.Method = "GET";
+
+
+
+                using (HttpWebResponse resp = (HttpWebResponse)request.GetResponse())
                 {
-                    responseText = sr.ReadToEnd();
+                    Stream respStream = resp.GetResponseStream();
+                    using (StreamReader sr = new StreamReader(respStream))
+                    {
+                        responseText = sr.ReadToEnd();
+                    }
                 }
+
+                responseText = responseText.Replace("\"", "");
+                responseText = responseText.Replace("[", "");
+                responseText = responseText.Replace("]", "");
+                responseText = responseText.Replace("{", "");
+                responseText = responseText.Replace("}", "");
+                //string[] temp = responseText.Split(',');
+
+                return responseText;
             }
+            catch (Exception ex)
+            {
 
-            responseText = responseText.Replace("\"", "");
-            responseText = responseText.Replace("[", "");
-            responseText = responseText.Replace("]", "");
-            responseText = responseText.Replace("{", "");
-            responseText = responseText.Replace("}", "");
-            //string[] temp = responseText.Split(',');
 
-            return responseText;
+            }
+            return "EMPTY";
         }
 
         private string PutWebServiceData(string url)
@@ -1871,7 +1882,7 @@ namespace AMM
 
             string strSave;
             strSave = strHead + msg;
-            Fnc_WriteFile(strPath, strSave);
+            //Fnc_WriteFile(strPath, strSave);
 
         }
 
