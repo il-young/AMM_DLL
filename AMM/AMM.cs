@@ -22,7 +22,7 @@ namespace AMM
         }
 
         public struct sql_cmd
-        {           
+        {
             public string Query;
             public int retry_cnt;
 
@@ -74,21 +74,21 @@ namespace AMM
 
         public async void RPSThreadStartAsync()
         {
-            while(true)
+            while (true)
             {
 
-                ReturnLogSave(string.Format("RPS_Q Count : {0}", RPS_Q.Count));
+                //ReturnLogSave(string.Format("RPS_Q Count : {0}", RPS_Q.Count));
                 if (RPS_Q.Count > 0)
                 {
                     RPSData tempData = RPS_Q.Peek();
-                    string res ="";
+                    string res = "";
                     ReturnLogSave("1 :" + tempData.Type.ToString() + " :: " + tempData.URL);
 
                     if (tempData.Type == RPSDataType.Get)
                     {
                         ReturnLogSave("2 : " + tempData.URL);
-                         res = GetWebServiceData(tempData.URL);
-                        ReturnLogSave("2 : " + tempData.URL + ":::" + res) ;
+                        res = GetWebServiceData(tempData.URL);
+                        ReturnLogSave("2 : " + tempData.URL + ":::" + res);
 
                         if (tempData.URL.Contains("amkor-batch") == true)
                         {
@@ -115,10 +115,10 @@ namespace AMM
                     }
                 }
 
-                
+
                 System.Threading.Thread.Sleep(1000);
             }
-            
+
         }
 
 
@@ -179,7 +179,7 @@ namespace AMM
 
             DBThread = new System.Threading.Thread(DBThread_Start);
 
-            if(DBThread.IsAlive == false)
+            if (DBThread.IsAlive == false)
                 DBThread.Start();
 
             RPSThread = new System.Threading.Thread(RPSThreadStartAsync);
@@ -760,87 +760,86 @@ namespace AMM
             try
             {
 
-            
-            System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
-            sw.Restart();
-            string query1 = "", query2 = "";
 
-            
-            ///////Pick 자재상태 업데이트
-            List<string> queryList1 = new List<string>();
-            string strSendtime = string.Format("{0}{1:00}{2:00}{3:00}{4:00}{5:00}", DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, DateTime.Now.Hour, DateTime.Now.Minute, DateTime.Now.Second);
+                System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
+                sw.Restart();
+                string query1 = "", query2 = "";
 
-            //queryList1.Add(Delete_Picklistinfo_Reelid(strLinecode, strEquipid, strReelid));
-            //query1 = string.Format(@"INSERT INTO TB_PICK_LIST_INFO (LINE_CODE,EQUIP_ID,PICKID,UID,STATUS,REQUESTOR) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}')",
-            //    strLinecode, strEquipid, strPickingid, strReelid, "OUT", strRequestor);
-            
-            //20221028
-            query1 = string.Format(@"UPDATE TB_PICK_LIST_INFO SET STATUS='{0}', LAST_UPDATE_TIME=getdate()  WHERE UID='{1}'", "OUT", strReelid);
 
-            queryList1.Add(query1);
+                ///////Pick 자재상태 업데이트
+                List<string> queryList1 = new List<string>();
+                string strSendtime = string.Format("{0}{1:00}{2:00}{3:00}{4:00}{5:00}", DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, DateTime.Now.Hour, DateTime.Now.Minute, DateTime.Now.Second);
 
-            
-            int nJudge = MSSql.SetData(queryList1); ///return 확인 해서 false 값 날려 야 함.
+                //queryList1.Add(Delete_Picklistinfo_Reelid(strLinecode, strEquipid, strReelid));
+                //query1 = string.Format(@"INSERT INTO TB_PICK_LIST_INFO (LINE_CODE,EQUIP_ID,PICKID,UID,STATUS,REQUESTOR) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}')",
+                //    strLinecode, strEquipid, strPickingid, strReelid, "OUT", strRequestor);
 
-            if (nJudge == 0)
-            {
-                AddSqlQuery(query1);
-                //ReturnLogSave(string.Format("SetUnloadOut TB_PICK_LIST_INFO UPDATE FAIL LINECODE : {0}, EQUIPID : {1}, REELID : {2}", strLinecode, strEquipid, strReelid));
-                return "TB_PICK_LIST_INFO UPDATE FAIL";
-            }
+                //20221028
+                query1 = string.Format(@"UPDATE TB_PICK_LIST_INFO SET STATUS='{0}', LAST_UPDATE_TIME=getdate()  WHERE UID='{1}'", "OUT", strReelid);
 
-            
+                queryList1.Add(query1);
 
-            
-            ///////////자재 정보 가져 오기 //TB_PICK_LIST_INFO
-            string query = "";
 
-            query = string.Format(@"SELECT * FROM TB_PICK_LIST_INFO with(NOLOCK) WHERE LINE_CODE='{0}' and EQUIP_ID='{1}' and UID='{2}'", strLinecode, strEquipid, strReelid);
-            DataTable dt = MSSql.GetData(query);
-            
-            DeleteHistory();
-
-            //////////로그 저장 ///TB_PICK_INOUT_HISTORY            
-            List<string> queryList2 = new List<string>();
-
-            if (dt.Rows.Count > 0)
-            {
-                AddTowerOut(strLinecode, strEquipid, dt.Rows[0]["TOWER_NO"].ToString(), dt.Rows[0]["UID"].ToString(), dt.Rows[0]["SID"].ToString(),
-                dt.Rows[0]["LOTID"].ToString(), dt.Rows[0]["QTY"].ToString(), dt.Rows[0]["MANUFACTURER"].ToString(), dt.Rows[0]["PRODUCTION_DATE"].ToString(),
-                dt.Rows[0]["INCH_INFO"].ToString(), dt.Rows[0]["INPUT_TYPE"].ToString(), dt.Rows[0]["AMKOR_BATCH"].ToString());
-
-                query2 = string.Format(@"INSERT INTO TB_PICK_INOUT_HISTORY (DATETIME,LINE_CODE,EQUIP_ID,PICKID,UID,STATUS,REQUESTOR,TOWER_NO,SID,LOTID,QTY,MANUFACTURER,PRODUCTION_DATE,INCH_INFO,INPUT_TYPE,ORDER_TYPE,AMKOR_BATCH) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}','{11}','{12}','{13}','{14}','{15}','{16}')",
-                    strSendtime, strLinecode, strEquipid, dt.Rows[0]["PICKID"].ToString(), strReelid, "OUT", dt.Rows[0]["REQUESTOR"].ToString(), dt.Rows[0]["TOWER_NO"].ToString(), dt.Rows[0]["SID"].ToString(), dt.Rows[0]["LOTID"].ToString(),
-                    dt.Rows[0]["QTY"].ToString(), dt.Rows[0]["MANUFACTURER"].ToString(), dt.Rows[0]["PRODUCTION_DATE"].ToString(), dt.Rows[0]["INCH_INFO"].ToString(), dt.Rows[0]["INPUT_TYPE"].ToString(), dt.Rows[0]["ORDER_TYPE"].ToString(), dt.Rows[0]["AMKOR_BATCH"].ToString());
-
-                queryList2.Add(query2);
-
-                nJudge = MSSql.SetData(queryList2); //return 확인 해서 false 값 날려 야 함.
+                int nJudge = MSSql.SetData(queryList1); ///return 확인 해서 false 값 날려 야 함.
 
                 if (nJudge == 0)
                 {
-                    AddSqlQuery(query2);
-                    //ReturnLogSave(string.Format("SetUnloadOut TB_PICK_INOUT_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}, REELID : {2}", strLinecode, strEquipid, strReelid));
-                    return "TB_PICK_INOUT_HISTORY INSERT FAIL";
+                    AddSqlQuery(query1);
+                    ReturnLogSave(string.Format("SetUnloadOut TB_PICK_LIST_INFO UPDATE FAIL LINECODE : {0}, EQUIPID : {1}, REELID : {2}", strLinecode, strEquipid, strReelid));
+                    return "TB_PICK_LIST_INFO UPDATE FAIL";
                 }
 
-                
-            }
-            else
-            {
-                //ReturnLogSave(string.Format("SetUnloadOut TB_PICK_LIST_INFO Select FAIL LINECODE : {0}, EQUIPID : {1}, REELID : {2}", strLinecode, strEquipid, strReelid));
-            }
+
+                ///////////자재 정보 가져 오기 //TB_PICK_LIST_INFO
+                string query = "";
+
+                query = string.Format(@"SELECT * FROM TB_PICK_LIST_INFO with(NOLOCK) WHERE LINE_CODE='{0}' and EQUIP_ID='{1}' and UID='{2}'", strLinecode, strEquipid, strReelid);
+                DataTable dt = MSSql.GetData(query);
+
+                DeleteHistory();
+
+                //////////로그 저장 ///TB_PICK_INOUT_HISTORY            
+                List<string> queryList2 = new List<string>();
+
+                if (dt.Rows.Count > 0)
+                {
+                    AddTowerOut(strLinecode, strEquipid, dt.Rows[0]["TOWER_NO"].ToString(), dt.Rows[0]["UID"].ToString(), dt.Rows[0]["SID"].ToString(),
+                    dt.Rows[0]["LOTID"].ToString(), dt.Rows[0]["QTY"].ToString(), dt.Rows[0]["MANUFACTURER"].ToString(), dt.Rows[0]["PRODUCTION_DATE"].ToString(),
+                    dt.Rows[0]["INCH_INFO"].ToString(), dt.Rows[0]["INPUT_TYPE"].ToString(), dt.Rows[0]["AMKOR_BATCH"].ToString());
+
+                    query2 = string.Format(@"INSERT INTO TB_PICK_INOUT_HISTORY (DATETIME,LINE_CODE,EQUIP_ID,PICKID,UID,STATUS,REQUESTOR,TOWER_NO,SID,LOTID,QTY,MANUFACTURER,PRODUCTION_DATE,INCH_INFO,INPUT_TYPE,ORDER_TYPE,AMKOR_BATCH) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}','{11}','{12}','{13}','{14}','{15}','{16}')",
+                        strSendtime, strLinecode, strEquipid, dt.Rows[0]["PICKID"].ToString(), strReelid, "OUT", dt.Rows[0]["REQUESTOR"].ToString(), dt.Rows[0]["TOWER_NO"].ToString(), dt.Rows[0]["SID"].ToString(), dt.Rows[0]["LOTID"].ToString(),
+                        dt.Rows[0]["QTY"].ToString(), dt.Rows[0]["MANUFACTURER"].ToString(), dt.Rows[0]["PRODUCTION_DATE"].ToString(), dt.Rows[0]["INCH_INFO"].ToString(), dt.Rows[0]["INPUT_TYPE"].ToString(), dt.Rows[0]["ORDER_TYPE"].ToString(), dt.Rows[0]["AMKOR_BATCH"].ToString());
+
+                    ReturnLogSave(query2);
+                    queryList2.Add(query2);
+
+                    nJudge = MSSql.SetData(queryList2); //return 확인 해서 false 값 날려 야 함.
+
+                    if (nJudge == 0)
+                    {
+                        AddSqlQuery(query2);
+                        ReturnLogSave(string.Format("SetUnloadOut TB_PICK_INOUT_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}, REELID : {2}", strLinecode, strEquipid, strReelid));
+                        return "TB_PICK_INOUT_HISTORY INSERT FAIL";
+                    }
+
+
+                }
+                else
+                {
+                    //ReturnLogSave(string.Format("SetUnloadOut TB_PICK_LIST_INFO Select FAIL LINECODE : {0}, EQUIPID : {1}, REELID : {2}", strLinecode, strEquipid, strReelid));
+                }
 
 
 
-            ////자재 삭제          
-            string strJudge = Delete_MTL_Info(strReelid);
+                ////자재 삭제          
+                string strJudge = Delete_MTL_Info(strReelid);
 
-            if (strJudge == "NG")
-            {
-                //ReturnLogSave(string.Format("SetUnloadOut DELETE FAIL LINECODE : {0}, EQUIPID : {1}, REELID : {2}", strLinecode, strEquipid, strReelid));
-                return string.Format("{0} DELETE FAIL", strReelid);
-            }
+                if (strJudge == "NG")
+                {
+                    //ReturnLogSave(string.Format("SetUnloadOut DELETE FAIL LINECODE : {0}, EQUIPID : {1}, REELID : {2}", strLinecode, strEquipid, strReelid));
+                    return string.Format("{0} DELETE FAIL", strReelid);
+                }
 
 
 
@@ -848,60 +847,60 @@ namespace AMM
                 //////////////IT Webservice////////////
                 /////모든 MNBR을 넣어 줘야 함.
                 string strMnbr = "", strResut = "", strTwrno = "", strGroup = "";
-            strTwrno = dt.Rows[0]["TOWER_NO"].ToString();
-            strGroup = strTwrno.Substring(2, 1);
+                strTwrno = dt.Rows[0]["TOWER_NO"].ToString();
+                strGroup = strTwrno.Substring(2, 1);
 
-            if (strTwrno == "T0101") strMnbr = "34118";
-            else if (strTwrno == "T0102") strMnbr = "34117";
-            else if (strTwrno == "T0103") strMnbr = "34119";
-            else if (strTwrno == "T0104") strMnbr = "34120";
-            else if (strTwrno == "T0201") strMnbr = "34121";
-            else if (strTwrno == "T0202") strMnbr = "34122";
-            else if (strTwrno == "T0203") strMnbr = "34123";
-            else if (strTwrno == "T0204") strMnbr = "34124";
-            else if (strTwrno == "T0301") strMnbr = "34125";
-            else if (strTwrno == "T0302") strMnbr = "34126";
-            else if (strTwrno == "T0303") strMnbr = "34127";
-            else if (strTwrno == "T0304") strMnbr = "34128";
-            else if (strTwrno == "T0401") strMnbr = "34861";
-            else if (strTwrno == "T0402") strMnbr = "34858";
-            else if (strTwrno == "T0403") strMnbr = "34854";
-            else if (strTwrno == "T0404") strMnbr = "34853";
-            else if (strTwrno == "T0501") strMnbr = "34862";
-            else if (strTwrno == "T0502") strMnbr = "34852";
-            else if (strTwrno == "T0503") strMnbr = "34857";
-            else if (strTwrno == "T0504") strMnbr = "34863";
-            else if (strTwrno == "T0601") strMnbr = "34859";
-            else if (strTwrno == "T0602") strMnbr = "34860";
-            else if (strTwrno == "T0603") strMnbr = "34855";
-            else if (strTwrno == "T0604") strMnbr = "34856";
-            //[210907_Sangik.choi_7번그룹 추가
-            else if (strTwrno == "T0701") strMnbr = "6417";
-            else if (strTwrno == "T0702") strMnbr = "6420";
-            else if (strTwrno == "T0703") strMnbr = "6418";
-            else if (strTwrno == "T0704") strMnbr = "6419";
-            //]210907_Sangik.choi_7번그룹 추가
-            else if (strTwrno == "T0801") strMnbr = "41649";    //220823_ilyoung_타워그룹추가
-            else if (strTwrno == "T0802") strMnbr = "41655";    //220823_ilyoung_타워그룹추가
-            else if (strTwrno == "T0803") strMnbr = "41654";    //220823_ilyoung_타워그룹추가
-            else if (strTwrno == "T0804") strMnbr = "41651";    //220823_ilyoung_타워그룹추가
-            else if (strTwrno == "T0901") strMnbr = "41652";    //220823_ilyoung_타워그룹추가
-            else if (strTwrno == "T0902") strMnbr = "41653";    //220823_ilyoung_타워그룹추가
-            else if (strTwrno == "T0903") strMnbr = "41656";    //220823_ilyoung_타워그룹추가
-            else if (strTwrno == "T0904") strMnbr = "41650";    //220823_ilyoung_타워그룹추가
-                                                                //220823 8, 9 그룹 추가
+                if (strTwrno == "T0101") strMnbr = "34118";
+                else if (strTwrno == "T0102") strMnbr = "34117";
+                else if (strTwrno == "T0103") strMnbr = "34119";
+                else if (strTwrno == "T0104") strMnbr = "34120";
+                else if (strTwrno == "T0201") strMnbr = "34121";
+                else if (strTwrno == "T0202") strMnbr = "34122";
+                else if (strTwrno == "T0203") strMnbr = "34123";
+                else if (strTwrno == "T0204") strMnbr = "34124";
+                else if (strTwrno == "T0301") strMnbr = "34125";
+                else if (strTwrno == "T0302") strMnbr = "34126";
+                else if (strTwrno == "T0303") strMnbr = "34127";
+                else if (strTwrno == "T0304") strMnbr = "34128";
+                else if (strTwrno == "T0401") strMnbr = "34861";
+                else if (strTwrno == "T0402") strMnbr = "34858";
+                else if (strTwrno == "T0403") strMnbr = "34854";
+                else if (strTwrno == "T0404") strMnbr = "34853";
+                else if (strTwrno == "T0501") strMnbr = "34862";
+                else if (strTwrno == "T0502") strMnbr = "34852";
+                else if (strTwrno == "T0503") strMnbr = "34857";
+                else if (strTwrno == "T0504") strMnbr = "34863";
+                else if (strTwrno == "T0601") strMnbr = "34859";
+                else if (strTwrno == "T0602") strMnbr = "34860";
+                else if (strTwrno == "T0603") strMnbr = "34855";
+                else if (strTwrno == "T0604") strMnbr = "34856";
+                //[210907_Sangik.choi_7번그룹 추가
+                else if (strTwrno == "T0701") strMnbr = "6417";
+                else if (strTwrno == "T0702") strMnbr = "6420";
+                else if (strTwrno == "T0703") strMnbr = "6418";
+                else if (strTwrno == "T0704") strMnbr = "6419";
+                //]210907_Sangik.choi_7번그룹 추가
+                else if (strTwrno == "T0801") strMnbr = "41649";    //220823_ilyoung_타워그룹추가
+                else if (strTwrno == "T0802") strMnbr = "41655";    //220823_ilyoung_타워그룹추가
+                else if (strTwrno == "T0803") strMnbr = "41654";    //220823_ilyoung_타워그룹추가
+                else if (strTwrno == "T0804") strMnbr = "41651";    //220823_ilyoung_타워그룹추가
+                else if (strTwrno == "T0901") strMnbr = "41652";    //220823_ilyoung_타워그룹추가
+                else if (strTwrno == "T0902") strMnbr = "41653";    //220823_ilyoung_타워그룹추가
+                else if (strTwrno == "T0903") strMnbr = "41656";    //220823_ilyoung_타워그룹추가
+                else if (strTwrno == "T0904") strMnbr = "41650";    //220823_ilyoung_타워그룹추가
+                                                                    //220823 8, 9 그룹 추가
 
-            
+
                 if (strMnbr != "")
-                {            
+                {
                     bWebservice = false;
                     if (bWebservice)
                     {
                         try
-                        {                        
+                        {
                             var taskResut = Fnc_InoutTransaction(strMnbr, dt.Rows[0]["REQUESTOR"].ToString(), "CMS_OUT", strReelid, "", dt.Rows[0]["SID"].ToString(), dt.Rows[0]["MANUFACTURER"].ToString(), dt.Rows[0]["LOTID"].ToString(), "", dt.Rows[0]["QTY"].ToString(), "EA");
                             strResut = taskResut.Result;
-                        
+
                             if (strResut.Contains("Success") != true && strResut.Contains("Same Status") != true
                                 && strResut.Contains("Enhance Location") != true && strResut.Contains("Already exist") != true)
                             {
@@ -933,6 +932,8 @@ namespace AMM
                 ReturnLogSave(ex.Source);
             }
             return "OK";
+
+
         }
 
         public string SetUnloadOut_Manual(string strLinecode, string strEquipid, string strReelid, bool bWebservice) ///3/14
@@ -1141,7 +1142,7 @@ namespace AMM
                 //ReturnLogSave(string.Format("SetUnloadEnd TB_PICK_ID_HISTORY INSERT FAIL LINECODE : {0}, EQUIPID : {1}, PICKINGID : {2}", strLinecode, strEquipid, strPickingid));
                 return "TB_PICK_ID_HISTORY INSERT FAIL";
             }
-            
+
             /////PickID delete
             List<string> queryList2 = new List<string>();
             queryList2.Add(Delete_Pickidinfo(strLinecode, strEquipid, strPickingid));
@@ -1170,7 +1171,7 @@ namespace AMM
         }
 
         public string GetWebServiceData(string url)
-        {            
+        {
             string responseText = string.Empty;
 
             byte[] arr = new byte[10];
@@ -1178,7 +1179,7 @@ namespace AMM
             HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(url);
             request.Method = "GET";
 
-            
+
 
             using (HttpWebResponse resp = (HttpWebResponse)request.GetResponse())
             {
@@ -1200,34 +1201,50 @@ namespace AMM
         }
 
         private string PutWebServiceData(string url)
-        {           
+        {
             string responseText = string.Empty;
 
-            byte[] arr = new byte[10];
-
-            HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(url);
-            request.Method = "PUT";
-            request.ContentType = "text / plain";
-            request.ContentLength = arr.Length;
-            request.KeepAlive = false;
-
-            Stream dataStream = request.GetRequestStream();
-
-            dataStream.Write(arr, 0, arr.Length);
-
-            using (HttpWebResponse resp = (HttpWebResponse)request.GetResponse())
+            try
             {
-                Stream respStream = resp.GetResponseStream();
-                using (StreamReader sr = new StreamReader(respStream))
+                byte[] arr = new byte[100];
+
+                HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(url);
+                request.Method = "PUT";
+                request.ContentType = "text / plain";
+                request.ContentLength = arr.Length;
+                request.Timeout = 10 * 1000;
+
+                request.KeepAlive = false;
+
+                //Stream dataStream = request.GetRequestStream();
+
+                //dataStream.Write(arr, 0, arr.Length);
+
+                using (Stream resp = request.GetRequestStream())
                 {
-                    responseText = sr.ReadToEnd();
+                    resp.Write(arr, 0, arr.Length);
                 }
+
+                using (WebResponse re = request.GetResponse())
+                {
+                    Stream restream = re.GetResponseStream();
+
+                    using (StreamReader sr = new StreamReader(restream))
+                    {
+                        responseText = sr.ReadToEnd();
+                    }
+                }
+
+                //dataStream.Close();
+
+                //ReturnLogSave(responseText + "\t" + sw.ElapsedMilliseconds.ToString());
+                return responseText;
             }
-
-            dataStream.Close();
-
-            //ReturnLogSave(responseText + "\t" + sw.ElapsedMilliseconds.ToString());
-            return responseText;
+            catch (Exception ex)
+            {
+                ReturnLogSave(ex.Message);
+            }
+            return "EMPTY";
         }
 
 
@@ -1256,7 +1273,7 @@ namespace AMM
 
                 ReturnLogSave(EX.Message);
             }
-            
+
         }
 
         public void AddGetBatch(string ReelID, string SID, string VendorLOT)
@@ -1276,17 +1293,32 @@ namespace AMM
             {
                 ReturnLogSave(ex.Message);
             }
-            
-            
+
+
         }
 
         private void AddTowerOut(string LineCode, string EquipID, string TowerID, string UID, string SID, string LotID, string QTY, string Manufacturer, string ProductionDate, string InchInfo, string InputType, string AmkorBatch)
         {
             RPSData RPSDataTemp = new RPSData();
 
-            RPSDataTemp.URL = string.Format("http://10.131.3.43:8080/api/reel-tower/out/c-1/k4/{format}?LINE_CODE={0}&EQUIP_ID={1}&" +
-                "TOWER_NO={2}&UID={3}&SID={4}&LOTID={5}&QTY={6}&MANUFACTURER={7}&PRODUCTION_DATE={8}&INCH_INFO={9}&INPUT_TYPE={10}&AMKOR_BATCH={11}",
-                LineCode, EquipID, TowerID, UID, SID, LotID, QTY, Manufacturer, ProductionDate, InchInfo, InputType, AmkorBatch);
+            string temp = "";
+
+            if (AmkorBatch != "")
+            {
+                temp = "http://10.131.3.43:8080/api/reel-tower/out/c-1/k4/json?LINE_CODE=" + LineCode + "&EQUIP_ID=" + EquipID + "&TOWER_NO=" + TowerID + "&UID=" + UID + "&SID=" + SID + "&LOTID=" + LotID + "&QTY=" + QTY + "&MANUFACTURER=" + Manufacturer + "&PRODUCTION_DATE=" + ProductionDate + "&INCH_INFO=" + InchInfo + "&INPUT_TYPE=" + InputType + "&AMKOR_BATCH=" + AmkorBatch;
+            }
+            else
+            {
+                temp = "http://10.131.3.43:8080/api/reel-tower/out/c-1/k4/json?LINE_CODE=" + LineCode + "&EQUIP_ID=" + EquipID + "&TOWER_NO=" + TowerID + "&UID=" + UID + "&SID=" + SID + "&LOTID=" + LotID + "&QTY=" + QTY + "&MANUFACTURER=" + Manufacturer + "&PRODUCTION_DATE=" + ProductionDate + "&INCH_INFO=" + InchInfo + "&INPUT_TYPE=" + InputType;
+            }
+
+            //LineCode, EquipID, TowerID, UID, SID, LotID, QTY, Manufacturer, ProductionDate, InchInfo, InputType, AmkorBatch);
+
+            //RPSDataTemp.URL = string.Format("http://10.131.3.43:8080/api/reel-tower/out/c-1/k4/{format}?LINE_CODE={0}&EQUIP_ID={1}&TOWER_NO={2}&UID={3}&SID={4}&LOTID={5}&QTY={6}&MANUFACTURER={7}&PRODUCTION_DATE={8}&INCH_INFO={9}&INPUT_TYPE={10}&AMKOR_BATCH={11}",
+            //LineCode, EquipID, TowerID, UID, SID, LotID, QTY, Manufacturer, ProductionDate, InchInfo, InputType, AmkorBatch);
+
+            RPSDataTemp.URL = temp;
+
             RPSDataTemp.Type = RPSDataType.Put;
 
             RPS_Q.Enqueue(RPSDataTemp);
@@ -1366,13 +1398,13 @@ namespace AMM
             }
             ReturnLogSave("Add Batch");
             AddBooking(strEquipid, strInfo[1]);  //20220819 Web Service 형식으로 변경하여 적용
-            AddGetBatch(strInfo[1], strInfo[2], strInfo[3]);    
+            AddGetBatch(strInfo[1], strInfo[2], strInfo[3]);
             DeleteHistory();
 
             //////////로그 저장 ///TB_PICK_INOUT_HISTORY
             List<string> queryList2 = new List<string>();
             query3 = string.Format(@"INSERT INTO TB_PICK_INOUT_HISTORY (DATETIME,LINE_CODE,EQUIP_ID,PICKID,UID,STATUS,REQUESTOR,TOWER_NO,SID,LOTID,QTY,MANUFACTURER,PRODUCTION_DATE,INCH_INFO,INPUT_TYPE,AMKOR_BATCH ) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}','{11}','{12}','{13}','{14}', '{15}')",
-                strSendtime, strLinecode, strEquipid, "", strInfo[1], "IN", "", strInfo[0], strInfo[2], strInfo[3], strInfo[4], strInfo[5], strInfo[6], strInfo[7], strInfo[8],"");
+                strSendtime, strLinecode, strEquipid, "", strInfo[1], "IN", "", strInfo[0], strInfo[2], strInfo[3], strInfo[4], strInfo[5], strInfo[6], strInfo[7], strInfo[8], "");
 
             queryList2.Add(query3);
 
@@ -1385,7 +1417,7 @@ namespace AMM
                 return "TB_PICK_INOUT_HISTORY INSERT FAIL";
             }
 
-            
+
 
             ///////////IT Webservice////////////
             /////모든 MNBR을 넣어 줘야 함.
@@ -1515,7 +1547,7 @@ namespace AMM
 
             //////////로그 저장 ///TB_PICK_INOUT_HISTORY
             query = string.Format(@"INSERT INTO TB_PICK_INOUT_HISTORY (DATETIME,LINE_CODE,EQUIP_ID,PICKID,UID,STATUS,REQUESTOR,TOWER_NO,SID,LOTID,QTY,MANUFACTURER,PRODUCTION_DATE,INCH_INFO,INPUT_TYPE,AMKOR_BATCH) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}','{11}','{12}','{13}','{14}','{15}')",
-                strSendtime, strLinecode, strEquipid, "", strInfo[1], "IN", "", strInfo[0], strInfo[2], strInfo[3], strInfo[4], strInfo[5], strInfo[6], strInfo[7], strInfo[8],"");
+                strSendtime, strLinecode, strEquipid, "", strInfo[1], "IN", "", strInfo[0], strInfo[2], strInfo[3], strInfo[4], strInfo[5], strInfo[6], strInfo[7], strInfo[8], "");
 
             int nJudge = MSSql.SetData(query); ///return 확인 해서 false 값 날려 야 함.
 
@@ -1629,7 +1661,7 @@ namespace AMM
 
             //////////로그 저장 ///TB_PICK_INOUT_HISTORY
             query = string.Format(@"INSERT INTO TB_PICK_INOUT_HISTORY (DATETIME,LINE_CODE,EQUIP_ID,PICKID,UID,STATUS,REQUESTOR,TOWER_NO,SID,LOTID,QTY,MANUFACTURER,PRODUCTION_DATE,INCH_INFO,INPUT_TYPE,AMKOR_BATCH) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}','{11}','{12}','{13}','{14}','{15}')",
-                strSendtime, info.linecode, info.equipid, "", strInfo[1], "IN", info.createby, strInfo[0], strInfo[2], strInfo[3], strInfo[4], strInfo[5], strInfo[6], strInfo[7], strInfo[8],"");
+                strSendtime, info.linecode, info.equipid, "", strInfo[1], "IN", info.createby, strInfo[0], strInfo[2], strInfo[3], strInfo[4], strInfo[5], strInfo[6], strInfo[7], strInfo[8], "");
 
             int nJudge = MSSql.SetData(query); ///return 확인 해서 false 값 날려 야 함.
 
@@ -1827,11 +1859,11 @@ namespace AMM
 
         public void ReturnLogSave(string msg)
         {
-            
-            System.IO.DirectoryInfo di = new System.IO.DirectoryInfo(@"C:\Log\ReturnLog");
+
+            System.IO.DirectoryInfo di = new System.IO.DirectoryInfo(System.Environment.CurrentDirectory + @"\Log\ReturnLog");
             if (!di.Exists) { di.Create(); }
 
-            string strPath = "C:\\Log\\ReturnLog\\";
+            string strPath = System.Environment.CurrentDirectory + @"\Log\ReturnLog";
             string strToday = string.Format("{0}{1:00}{2:00}", DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day);
             string strHead = string.Format(" {0:00}:{1:00}:{2:00}] ", DateTime.Now.Hour, DateTime.Now.Minute, DateTime.Now.Second);
             strPath = strPath + strToday + "ReturnLog.txt";
@@ -1839,8 +1871,8 @@ namespace AMM
 
             string strSave;
             strSave = strHead + msg;
-            //Fnc_WriteFile(strPath, strSave);
-            
+            Fnc_WriteFile(strPath, strSave);
+
         }
 
         public void Fnc_WriteFile(string strFileName, string strLine)
@@ -2175,9 +2207,9 @@ namespace AMM
             List<string> queryList = new List<string>();
 
             string query = "";
-            
+
             query = string.Format(@"INSERT INTO TB_PICK_LIST_INFO (LINE_CODE,EQUIP_ID,PICKID,UID,STATUS,REQUESTOR,TOWER_NO,SID,LOTID,QTY,MANUFACTURER,PRODUCTION_DATE,INCH_INFO,INPUT_TYPE,ORDER_TYPE,AMKOR_BATCH) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}','{11}','{12}','{13}','{14}','{15}')",
-                strLinecode, strEquipid, strPickid, strUid, "READY", strRequestor, strTwrno, strSid, strLotid, strQty, strManufacturer, strProductiondate, strInchinfo, strInputtype, strOrdertype, dt.Rows.Count==0?"":dt.Rows[0]["AMKOR_BATCH"] ==null ? "" : dt.Rows[0]["AMKOR_BATCH"].ToString());
+                strLinecode, strEquipid, strPickid, strUid, "READY", strRequestor, strTwrno, strSid, strLotid, strQty, strManufacturer, strProductiondate, strInchinfo, strInputtype, strOrdertype, dt.Rows.Count == 0 ? "" : dt.Rows[0]["AMKOR_BATCH"] == null ? "" : dt.Rows[0]["AMKOR_BATCH"].ToString());
 
             queryList.Add(query);
             int nJudge = MSSql.SetData(queryList); ///return 확인 해서 false 값 날려 야 함.
