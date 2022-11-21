@@ -952,6 +952,11 @@ namespace AMM
 
             DeleteHistory();
 
+            AddTowerOut(strLinecode, strEquipid, dt.Rows[0]["TOWER_NO"].ToString(), dt.Rows[0]["UID"].ToString(), dt.Rows[0]["SID"].ToString(),
+                    dt.Rows[0]["LOTID"].ToString(), dt.Rows[0]["QTY"].ToString(), dt.Rows[0]["MANUFACTURER"].ToString(), dt.Rows[0]["PRODUCTION_DATE"].ToString(),
+                    dt.Rows[0]["INCH_INFO"].ToString(), dt.Rows[0]["INPUT_TYPE"].ToString(), dt.Rows[0]["AMKOR_BATCH"].ToString());
+
+
             //////////로그 저장 ///TB_PICK_INOUT_HISTORY
             query2 = string.Format(@"INSERT INTO TB_PICK_INOUT_HISTORY (DATETIME,LINE_CODE,EQUIP_ID,PICKID,UID,STATUS,REQUESTOR,TOWER_NO,SID,LOTID,QTY,MANUFACTURER,PRODUCTION_DATE,INCH_INFO,INPUT_TYPE,AMKOR_BATCH) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}','{11}','{12}','{13}','{14}', '{15}')",
                 strSendtime, strLinecode, strEquipid, "-", strReelid, "OUT-MANUAL", "-", dt.Rows[0]["TOWER_NO"].ToString(), dt.Rows[0]["SID"].ToString(), dt.Rows[0]["LOTID"].ToString(),
