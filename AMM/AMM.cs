@@ -13,8 +13,11 @@ using System.IO;
 
 namespace AMM
 {
+   
     public class AMM
     {
+        
+
         public enum RPSDataType
         {
             Get = 1,
@@ -77,7 +80,7 @@ namespace AMM
             while (true)
             {
 
-                //ReturnLogSave(string.Format("RPS_Q Count : {0}", RPS_Q.Count));
+                ReturnLogSave(string.Format("RPS_Q Count : {0}", RPS_Q.Count));
                 if (RPS_Q.Count > 0)
                 {
                     RPSData tempData = RPS_Q.Peek();
@@ -1882,11 +1885,13 @@ namespace AMM
             string strPath = System.Environment.CurrentDirectory + @"\Log\ReturnLog";
             string strToday = string.Format("{0}{1:00}{2:00}", DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day);
             string strHead = string.Format(" {0:00}:{1:00}:{2:00}] ", DateTime.Now.Hour, DateTime.Now.Minute, DateTime.Now.Second);
-            strPath = strPath + strToday + "ReturnLog.txt";
+            strPath = strPath +"\\" +  strToday + "ReturnLog.txt";
             strHead = strToday + strHead;
 
             string strSave;
             strSave = strHead + msg;
+
+            
             //Fnc_WriteFile(strPath, strSave);
 
         }
