@@ -1,22 +1,26 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net;
 using System.IO;
-
-
+using System.Linq;
 
 namespace AMM
 {
-   
+
     public class AMM
     {
-        
+        private static readonly NLog.Logger Wlog = NLog.LogManager.GetLogger("WebThread");
+        private static readonly NLog.Logger Dlog = NLog.LogManager.GetLogger("DBThread");
+        private static readonly NLog.Logger log = NLog.LogManager.GetCurrentClassLogger();
+
+        public int MaxRetry = 10;
+
+        public string RPSDataPath = System.Environment.CurrentDirectory + "\\AMM_DATA\\RPSData.txt";
+        public string DBDataPath = System.Environment.CurrentDirectory + "\\AMM_DATA\\DBData.txt";
 
         public enum RPSDataType
         {
@@ -29,9 +33,9 @@ namespace AMM
             public string Query;
             public int retry_cnt;
 
-            public void init()
+            public sql_cmd(String q)
             {
-                Query = "";
+                Query = q;
                 retry_cnt = 0;
             }
 
@@ -45,12 +49,14 @@ namespace AMM
         public struct RPSData
         {
             public RPSDataType Type;
+            public int Retry;
             public string URL;
 
             public RPSData(RPSDataType t, string r)
             {
                 Type = t;
-                URL = "";
+                URL = r;
+                Retry = 0;
             }
         }
 
@@ -77,51 +83,88 @@ namespace AMM
 
         public async void RPSThreadStartAsync()
         {
+            Wlog.Info("RPSThreadStartAsync Start");
+
             while (true)
             {
-
-                ReturnLogSave(string.Format("RPS_Q Count : {0}", RPS_Q.Count));
-                if (RPS_Q.Count > 0)
+                try
                 {
-                    RPSData tempData = RPS_Q.Peek();
-                    string res = "";
-                    ReturnLogSave("1 :" + tempData.Type.ToString() + " :: " + tempData.URL);
-
-                    if (tempData.Type == RPSDataType.Get)
+                    if (RPS_Q.Count > 0)
                     {
-                        ReturnLogSave("2 : " + tempData.URL);
-                        res = GetWebServiceData(tempData.URL);
-                        ReturnLogSave("2 : " + tempData.URL + ":::" + res);
+                        Wlog.Info(string.Format("RPS_Q Count : {0}", RPS_Q.Count));
+                        RPSData tempData = RPS_Q.Peek();
+                        string res = "";
 
-                        if (tempData.URL.Contains("amkor-batch") == true && res != "EMPTY")
+                        Console.WriteLine(RPS_Q.Count);
+
+                        ++tempData.Retry;
+                        Wlog.Info(tempData.Type.ToString() + " :: " + tempData.URL);
+
+                        if (tempData.Retry < 10)
                         {
-                            ReturnLogSave("4");
-                            SetAmkorBatch(res);
+                            if (tempData.Type == RPSDataType.Get)
+                            {
+                                Wlog.Info(tempData.URL);
+                                res = GetWebServiceData(tempData.URL);
+                                Wlog.Info(tempData.URL + ":::" + res);
+
+                                if (tempData.URL.Contains("amkor-batch") == true && res != "EMPTY")
+                                {
+                                    SetAmkorBatch(res);
+                                }
+                                else
+                                {
+                                    Wlog.Info("Out of Range");
+                                }
+
+                                if (res == "EMPTY")
+                                {
+                                    RPS_Q.Dequeue();
+                                    RPS_Q.Enqueue(tempData);
+                                    Console.WriteLine("EMPTY");
+                                }
+                                else
+                                {
+                                    RPS_Q.Dequeue();
+                                    ReadRPSData();
+                                }
+                            }
+                            else
+                            {
+                                Wlog.Info(tempData.URL);
+                                res = PutWebServiceData(tempData.URL);
+                                Wlog.Info(tempData.URL + "::::" + res);
+
+                                if (res == "EMPTY")
+                                {
+                                    RPS_Q.Dequeue();
+                                    RPS_Q.Enqueue(tempData);
+                                    Console.WriteLine("EMPTY2");
+                                }
+                                else
+                                {
+                                    RPS_Q.Dequeue();
+                                    ReadRPSData();
+                                }
+                            }
                         }
-                        else
+                        else     // retry Fail
                         {
-
-                        }
-
-                        if (res != "EMPTY")
+                            Wlog.Error("Fail Retry : " + tempData.URL);
                             RPS_Q.Dequeue();
-                    }
-                    else
-                    {
-                        ReturnLogSave("3");
-                        res = PutWebServiceData(tempData.URL);
-
-                        if (res == "")
-                            RPS_Q.Enqueue(tempData);
-                        else
-                        {
-                            RPS_Q.Dequeue();
+                            WriteRPSData(tempData);
+                            Wlog.Error("Write Complete");
                         }
                     }
+
+                    System.Threading.Thread.Sleep(1000);
                 }
-
-
-                System.Threading.Thread.Sleep(1000);
+                catch (Exception ex)
+                {
+                    Wlog.Error(ex.StackTrace);
+                    Wlog.Error(ex.Message);
+                }
+                
             }
 
         }
@@ -130,39 +173,249 @@ namespace AMM
         private void DBThread_Start()
         {
             int res = 0;
+            Dlog.Info("DBThread_Start");
 
             while (true)
             {
-                if (SQL_Q.Count > 0)
+                try
                 {
-                    res = MSSql.SetData(SQL_Q.Peek().Query);
-                    ////ReturnLogSave(string.Format("DBThread_Start Queue Count : {0}, Queue[0] : {1}, Return : {2}", SQL_Q.Count, SQL_Q.Peek(), res));
-
-                    if (res != 0)
-                        SQL_Q.Dequeue();
-                    else
+                    if (SQL_Q.Count > 0)
                     {
-                        sql_cmd sql_temp = SQL_Q.Dequeue();
+                        res = MSSql.SetData(SQL_Q.Peek().Query);
+                        Dlog.Info(string.Format("DBThread_Start Queue Count : {0}, Queue[0] : {1}, Return : {2}", SQL_Q.Count, SQL_Q.Peek(), res));
 
-                        if (sql_temp.retry_cnt < 5)
-                        {
-                            sql_temp.retry();
-                            SQL_Q.Enqueue(sql_temp);
-                            ////ReturnLogSave(string.Format("DBThread_Start Retry:{0} Query:{1}", sql_temp.retry_cnt, sql_temp.Query));
-                        }
+                        if (res != 0)
+                            SQL_Q.Dequeue();
                         else
                         {
-                            ////ReturnLogSave(string.Format("DBThread_Start Retry Fail Query : {0}", sql_temp.Query));
+                            sql_cmd sql_temp = SQL_Q.Dequeue();
+
+                            if (sql_temp.retry_cnt < 5)
+                            {
+                                sql_temp.retry();
+                                SQL_Q.Enqueue(sql_temp);
+                                Dlog.Info(string.Format("DBThread_Start Retry:{0} Query:{1}", sql_temp.retry_cnt, sql_temp.Query));
+                            }
+                            else
+                            {
+                                Dlog.Info(string.Format("DBThread_Start Retry Fail Query : {0}", sql_temp.Query));
+                            }
                         }
                     }
+                    System.Threading.Thread.Sleep(100);
                 }
-                System.Threading.Thread.Sleep(100);
+                catch (Exception ex)
+                {
+                    Dlog.Error(ex.StackTrace);
+                    Dlog.Error(ex.Message);
+                }
             }
         }
+
+        public void WriteRPSData(RPSData RPStemp)
+        {
+            try
+            {
+                List<string> temp = new List<string>();
+
+                temp.Add(string.Format("{0};{1}", (RPStemp.Type == RPSDataType.Get ? "GET" : "PUT"), RPStemp.URL));
+
+                AddRPSData(temp.ToArray<string>());
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex.StackTrace);
+                log.Error(ex.Message);
+            }
+            
+        }
+
+        public void AddRPSData(string[] data)
+        {
+            try
+            {
+                Wlog.Info("Add RPS Data : " + string.Join(";", data));
+
+
+                string[] dirtemp = RPSDataPath.Split('\\');
+                string dir = string.Join("\\", dirtemp, 0, dirtemp.Length - 1);
+
+                if (Directory.Exists(dir) == false)
+                    Directory.CreateDirectory(dir);
+
+                if(File.Exists(RPSDataPath) == true)
+                {
+                    System.IO.File.AppendAllLines(RPSDataPath, data);
+                }
+                else
+                {
+                    System.IO.File.WriteAllLines(RPSDataPath, data);
+                }
+            }
+            catch (Exception ex)
+            {
+                Wlog.Error(ex.StackTrace);
+                Wlog.Error(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// 데이터 파일 삭제 후 재 생성
+        /// </summary>
+        /// <param name="data"></param>
+        public void WriteRPSData(string[] data)
+        {
+            try
+            {
+                if (data.Length != 0)
+                {
+                    System.IO.File.Delete(RPSDataPath);
+
+                    Wlog.Info("RPS data file delete");
+
+                    List<string> datatemp = new List<string>();
+
+                    for (int i = 0; i < data.Length; i++)
+                    {
+                        if (data[i] != "")
+                        {
+                            datatemp.Add(data[i]);
+                            Wlog.Info("Data Added : " + data[i]);
+                        }
+                    }
+
+                    System.IO.File.WriteAllLines(RPSDataPath, datatemp.ToArray());
+                    Wlog.Info("Data Write Complete");
+                }
+            }
+            catch (Exception ex)
+            {
+                Wlog.Error(ex.StackTrace);
+                Wlog.Error(ex.Message);
+            }                
+        }
+
+        
+        public void ReadRPSData()
+        {
+            string[] RPSTemp = new string[1];
+
+            try
+            {
+                Wlog.Info("Read RPS Data");
+
+                if (System.IO.File.Exists(RPSDataPath) == true)
+                {
+                    RPSTemp = System.IO.File.ReadAllText(RPSDataPath).Split('\n');
+
+
+                    for(int i = 0; i < RPSTemp.Length; i++)
+                    {
+                        RPSTemp[i] = RPSTemp[i].Replace("\r", "");
+                    }                    
+
+                    Wlog.Info(string.Join(";", RPSTemp));
+
+                    if (RPSTemp.Length != 0 || RPSTemp[0] != null)
+                    {
+                        for(int i = 0; i < RPSTemp.Length; i++)                            
+                        {
+                            if (RPSTemp[i] != null && RPSTemp[i] != "")
+                            {
+                                Wlog.Info("Read Data : " + RPSTemp[i]);
+
+                                if(RPSTemp[i].Split(';').Length == 2)
+                                {
+                                    RPSData rPS = new RPSData(RPSTemp[i].Split(';')[0] == "GET" ? RPSDataType.Get : RPSDataType.Put, RPSTemp[i].Split(';')[1]);
+
+                                    RPS_Q.Enqueue(rPS);
+                                    Console.WriteLine("Read");
+
+                                    Wlog.Info("Added Data" + RPSTemp[i]);
+                                    RPSTemp[i] = "";
+                                }
+                            }                                
+                        }
+
+                        WriteRPSData(RPSTemp);
+
+                        Wlog.Info("File Write Complete");
+                        return;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Wlog.Error(ex.StackTrace);
+                Wlog.Error(ex.Message);
+            }
+            WriteRPSData(RPSTemp);
+            Wlog.Info("Some Thing Wrong File Write Complete");
+        }
+
+        public void ReadDBData()
+        {
+            string[] DBTemp = new string[1];
+
+            try
+            {
+                Dlog.Info("Read DB Data");
+
+                if (System.IO.File.Exists(DBDataPath) == true)
+                {
+                    DBTemp = System.IO.File.ReadAllText(DBDataPath).Split('\n');
+
+
+                    for (int i = 0; i < DBTemp.Length; i++)
+                    {
+                        DBTemp[i] = DBTemp[i].Replace("\r", "");
+                    }
+
+                    Wlog.Info(string.Join(";", DBTemp));
+
+                    if (DBTemp.Length != 0 || DBTemp[0] != null)
+                    {
+                        for (int i = 0; i < DBTemp.Length; i++)
+                        {
+                            if (DBTemp[i] != null && DBTemp[i] != "")
+                            {
+                                Wlog.Info("Read Data : " + DBTemp[i]);
+
+                                if (DBTemp[i].Split(';').Length == 2)
+                                {
+                                    RPSData rPS = new sql_cmd(DBTemp[i].Split(';')[0] == "GET" ? RPSDataType.Get : RPSDataType.Put, DBTemp[i].Split(';')[1]);
+
+                                    SQL_Q.Enqueue(rPS);
+                                    Console.WriteLine("Read");
+
+                                    Wlog.Info("Added Data" + DBTemp[i]);
+                                    DBTemp[i] = "";
+                                }
+                            }
+                        }
+
+                        WriteRPSData(DBTemp);
+
+                        Wlog.Info("File Write Complete");
+                        return;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Wlog.Error(ex.StackTrace);
+                Wlog.Error(ex.Message);
+            }
+            WriteRPSData(DBTemp);
+            Wlog.Info("Some Thing Wrong File Write Complete");
+        }
+
 
 
         public string Connect()
         {
+
+            ReturnLogSave("Connect Start");
             if (MSSql != null)
             {
                 //ReturnLogSave("SqlManager is null");
@@ -181,6 +434,8 @@ namespace AMM
             }
             else
                 bConnection = true;
+
+            ReadRPSData();
 
             DBThread = new System.Threading.Thread(DBThread_Start);
 
@@ -1188,10 +1443,10 @@ namespace AMM
             {
                 byte[] arr = new byte[10];
 
+                Wlog.Info("GET : " + url);
+
                 HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(url);
                 request.Method = "GET";
-
-
 
                 using (HttpWebResponse resp = (HttpWebResponse)request.GetResponse())
                 {
@@ -1201,6 +1456,8 @@ namespace AMM
                         responseText = sr.ReadToEnd();
                     }
                 }
+
+                Wlog.Info("Response Data : " + responseText);
 
                 responseText = responseText.Replace("\"", "");
                 responseText = responseText.Replace("[", "");
@@ -1213,8 +1470,8 @@ namespace AMM
             }
             catch (Exception ex)
             {
-
-
+                Wlog.Error(ex.StackTrace);
+                Wlog.Error(ex.Message);
             }
             return "EMPTY";
         }
@@ -1227,6 +1484,8 @@ namespace AMM
             {
                 byte[] arr = new byte[100];
 
+                Wlog.Info("Put " + url);
+
                 HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(url);
                 request.Method = "PUT";
                 request.ContentType = "text / plain";
@@ -1234,10 +1493,6 @@ namespace AMM
                 request.Timeout = 10 * 1000;
 
                 request.KeepAlive = false;
-
-                //Stream dataStream = request.GetRequestStream();
-
-                //dataStream.Write(arr, 0, arr.Length);
 
                 using (Stream resp = request.GetRequestStream())
                 {
@@ -1254,14 +1509,14 @@ namespace AMM
                     }
                 }
 
-                //dataStream.Close();
+                Wlog.Info("Response Data : " + responseText);
 
-                //ReturnLogSave(responseText + "\t" + sw.ElapsedMilliseconds.ToString());
                 return responseText;
             }
             catch (Exception ex)
             {
-                ReturnLogSave(ex.Message);
+                Wlog.Error(ex.StackTrace);
+                Wlog.Error(ex.Message);
             }
             return "EMPTY";
         }
@@ -1273,8 +1528,7 @@ namespace AMM
         {
             try
             {
-                ReturnLogSave("5");
-                ReturnLogSave("SetAmkorBatch(" + WebResult + ")");
+                Wlog.Info("SetAmkorBatch(" + WebResult + ")");
 
                 if (WebResult != "")
                 {
@@ -1283,14 +1537,14 @@ namespace AMM
                     string Query = string.Format("UPDATE TB_MTL_INFO SET AMKOR_BATCH='{0}' WHERE [UID]='{1}' AND [SID]='{2}' and [LOTID]='{3}'",
                         BatchTemp[2].Split(':')[1].Trim(), BatchTemp[0].Split(':')[1].Trim(), BatchTemp[1].Split(':')[1].Trim(), BatchTemp[3].Split(':')[1].Trim());
 
-                    ReturnLogSave(Query);
+                    Wlog.Info(Query);
                     AddSqlQuery(Query);
                 }
             }
-            catch (Exception EX)
+            catch (Exception ex)
             {
-
-                ReturnLogSave(EX.Message);
+                Wlog.Error(ex.StackTrace);
+                Wlog.Error(ex.Message);
             }
 
         }
@@ -1302,9 +1556,9 @@ namespace AMM
             try
             {
                 RPSDataTemp.URL = string.Format("http://10.131.3.43:8080/api/reel/amkor-batch/k4/json?REEL_ID={0}&SID={1}&VENDOR_LOT={2}", ReelID, SID, VendorLOT);
-
                 RPSDataTemp.Type = RPSDataType.Get;
-                ReturnLogSave(RPSDataTemp.URL);
+
+                ReturnLogSave("Add : " + RPSDataTemp.URL);
 
                 RPS_Q.Enqueue(RPSDataTemp);
             }
@@ -1324,11 +1578,11 @@ namespace AMM
 
             if (AmkorBatch != "")
             {
-                temp = "http://10.131.3.43:8080/api/reel-tower/out/c-1/k4/json?LINE_CODE=" + LineCode + "&EQUIP_ID=" + EquipID + "&TOWER_NO=" + TowerID + "&UID=" + UID + "&SID=" + SID + "&LOTID=" + LotID + "&QTY=" + QTY + "&MANUFACTURER=" + Manufacturer + "&PRODUCTION_DATE=" + ProductionDate + "&INCH_INFO=" + InchInfo + "&INPUT_TYPE=" + InputType + "&AMKOR_BATCH=" + AmkorBatch;
+                temp = "http://10.131.3.43:8080/api/reel-tower/out/c-1/k4/json?LINE_CODE=" + LineCode + "&EQUIP_ID=" + EquipID + "&TOWER_NO=" + TowerID + "&UID=" + UID + "&SID=" + SID + "&LOTID=" + LotID + "&QTY=" + QTY.Replace(",","") + "&MANUFACTURER=" + Manufacturer + "&PRODUCTION_DATE=" + ProductionDate + "&INCH_INFO=" + InchInfo + "&INPUT_TYPE=" + InputType + "&AMKOR_BATCH=" + AmkorBatch;
             }
             else
             {
-                temp = "http://10.131.3.43:8080/api/reel-tower/out/c-1/k4/json?LINE_CODE=" + LineCode + "&EQUIP_ID=" + EquipID + "&TOWER_NO=" + TowerID + "&UID=" + UID + "&SID=" + SID + "&LOTID=" + LotID + "&QTY=" + QTY + "&MANUFACTURER=" + Manufacturer + "&PRODUCTION_DATE=" + ProductionDate + "&INCH_INFO=" + InchInfo + "&INPUT_TYPE=" + InputType;
+                temp = "http://10.131.3.43:8080/api/reel-tower/out/c-1/k4/json?LINE_CODE=" + LineCode + "&EQUIP_ID=" + EquipID + "&TOWER_NO=" + TowerID + "&UID=" + UID + "&SID=" + SID + "&LOTID=" + LotID + "&QTY=" + QTY.Replace(",", "") + "&MANUFACTURER=" + Manufacturer + "&PRODUCTION_DATE=" + ProductionDate + "&INCH_INFO=" + InchInfo + "&INPUT_TYPE=" + InputType;
             }
 
             //LineCode, EquipID, TowerID, UID, SID, LotID, QTY, Manufacturer, ProductionDate, InchInfo, InputType, AmkorBatch);
@@ -1353,12 +1607,14 @@ namespace AMM
                 string TowerNum = TowerName.Replace("TWR", "");
                 RPSDataTemp.URL = string.Format("http://10.131.3.43:8080/api/invt/prod/booking/reel-tower/in/c-1/json?REEL_TOWER_IN={0}&REEL_ID={1}", TowerNum, ReelID);
                 RPSDataTemp.Type = RPSDataType.Put;
-
+                
                 RPS_Q.Enqueue(RPSDataTemp);
+
+                ReturnLogSave("Add : " + RPSDataTemp.URL);
             }
             catch (Exception ex)
             {
-                //ReturnLogSave(string.Format("UpdateBooking Fail : {0}", ex.Message));
+                ReturnLogSave(string.Format("UpdateBooking Fail : {0}", ex.Message));
             }
         }
 
@@ -1878,31 +2134,36 @@ namespace AMM
 
         public void ReturnLogSave(string msg)
         {
+            try
+            {
+                System.IO.DirectoryInfo di = new System.IO.DirectoryInfo(System.Environment.CurrentDirectory + @"\Log\ReturnLog");
+                if (!di.Exists) { di.Create(); }
 
-            System.IO.DirectoryInfo di = new System.IO.DirectoryInfo(System.Environment.CurrentDirectory + @"\Log\ReturnLog");
-            if (!di.Exists) { di.Create(); }
+                string strPath = System.Environment.CurrentDirectory + @"\Log\ReturnLog";
+                string strToday = string.Format("{0}{1:00}{2:00}", DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day);
+                string strHead = string.Format(" {0:00}:{1:00}:{2:00}] ", DateTime.Now.Hour, DateTime.Now.Minute, DateTime.Now.Second);
+                strPath = strPath + "\\" + strToday + "ReturnLog.txt";
+                strHead = strToday + strHead;
 
-            string strPath = System.Environment.CurrentDirectory + @"\Log\ReturnLog";
-            string strToday = string.Format("{0}{1:00}{2:00}", DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day);
-            string strHead = string.Format(" {0:00}:{1:00}:{2:00}] ", DateTime.Now.Hour, DateTime.Now.Minute, DateTime.Now.Second);
-            strPath = strPath +"\\" +  strToday + "ReturnLog.txt";
-            strHead = strToday + strHead;
+                string strSave;
+                strSave = strHead + msg;
 
-            string strSave;
-            strSave = strHead + msg;
 
+                Fnc_WriteFile(strPath, msg);
+            }
+            catch (Exception ex)
+            {
+                Wlog.Error(ex.StackTrace);
+                Wlog.Error(ex.Message);
+            }
             
-            //Fnc_WriteFile(strPath, strSave);
 
         }
 
         public void Fnc_WriteFile(string strFileName, string strLine)
         {
-            using (System.IO.StreamWriter file =
-           new System.IO.StreamWriter(strFileName, true))
-            {
-                file.WriteLine(strLine);
-            }
+            File.AppendAllText(strFileName, strLine);
+            Wlog.Info(strLine);
         }
 
         public async Task<string> Fnc_RunAsync(string strKey)
