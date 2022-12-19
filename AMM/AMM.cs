@@ -15,7 +15,7 @@ namespace AMM
     {
         private static readonly NLog.Logger Wlog = NLog.LogManager.GetLogger("WebThread");
         private static readonly NLog.Logger Dlog = NLog.LogManager.GetLogger("DBThread");
-        private static readonly NLog.Logger log = NLog.LogManager.GetCurrentClassLogger();
+        private static readonly NLog.Logger log = NLog.LogManager.GetLogger("SEQLog");
 
         public int MaxRetry = 10;
 
@@ -100,7 +100,7 @@ namespace AMM
                         ++tempData.Retry;
                         Wlog.Info(tempData.Type.ToString() + " :: " + tempData.URL);
 
-                        if (tempData.Retry < 10)
+                        if (tempData.Retry < MaxRetry)
                         {
                             if (tempData.Type == RPSDataType.Get)
                             {
@@ -129,7 +129,7 @@ namespace AMM
                                     ReadRPSData();
                                 }
                             }
-                            else
+                            else    //Put
                             {
                                 Wlog.Info(tempData.URL);
                                 res = PutWebServiceData(tempData.URL);
@@ -140,6 +140,56 @@ namespace AMM
                                     RPS_Q.Dequeue();
                                     RPS_Q.Enqueue(tempData);
                                     Console.WriteLine("EMPTY2");
+                                }
+                                else if(tempData.URL.Contains("/reel-tower/out") == true)
+                                {
+                                    Wlog.Info("/reel-tower/out");
+
+                                    if(res.Contains("\"RESULT\":\"SUCCESS\"") == true)  // Success
+                                    {
+                                        Wlog.Info("RESULT:SUCCESS");
+                                        RPS_Q.Dequeue();
+                                        ReadRPSData();
+                                    }
+                                    else
+                                    {
+                                        Wlog.Info(string.Format("MESSAGE : {0}", res.Split(',')[7].Split(':')[1]));
+                                        RPS_Q.Dequeue();
+                                        RPS_Q.Enqueue(tempData);
+                                    }
+                                }
+                                else if(tempData.URL.Contains("booking/reel-tower") == true)
+                                {
+                                    Wlog.Info("booking/reel-tower");
+
+                                    if (res.Contains("\"RESULT\":\"SUCCESS\"") == true)
+                                    {
+                                        Wlog.Info("RESULT:SUCCESS");
+                                        RPS_Q.Dequeue();
+                                        ReadRPSData();
+                                    }
+                                    else if (res.Contains("\"RESULT\":\"FAIL\"") == true)
+                                    {
+                                        Wlog.Info("RESULT:FAIL");
+
+                                        if (res.Contains("\"MESSAGE\":\"no data") == true)  // Sorter 
+                                        {
+                                            Wlog.Info("no data");
+                                            RPS_Q.Dequeue();
+                                            ReadRPSData();
+                                        }
+                                        else
+                                        {
+                                            Wlog.Info(string.Format("MESSAGE : {0}", res.Split(',')[7].Split(':')[1]));
+                                            RPS_Q.Dequeue();
+                                            RPS_Q.Enqueue(tempData);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        RPS_Q.Dequeue();
+                                        RPS_Q.Enqueue(tempData);
+                                    }
                                 }
                                 else
                                 {
@@ -182,22 +232,35 @@ namespace AMM
                     if (SQL_Q.Count > 0)
                     {
                         res = MSSql.SetData(SQL_Q.Peek().Query);
+                        Dlog.Info(string.Format("Excute Query : {0}", SQL_Q.Peek().Query));
                         Dlog.Info(string.Format("DBThread_Start Queue Count : {0}, Queue[0] : {1}, Return : {2}", SQL_Q.Count, SQL_Q.Peek(), res));
 
                         if (res != 0)
+                        {
                             SQL_Q.Dequeue();
+                            Dlog.Info("Queue Dequeue");
+                            ReadDBData();
+                        }
                         else
                         {
                             sql_cmd sql_temp = SQL_Q.Dequeue();
 
-                            if (sql_temp.retry_cnt < 5)
+                            if (sql_temp.retry_cnt < MaxRetry)
                             {
-                                sql_temp.retry();
-                                SQL_Q.Enqueue(sql_temp);
-                                Dlog.Info(string.Format("DBThread_Start Retry:{0} Query:{1}", sql_temp.retry_cnt, sql_temp.Query));
+                                if (sql_temp.Query.Contains("<  REPLACE(REPLACE(REPLACE(CONVERT(varchar, dateadd(month, -6, getdate()), 20), '-', ''), ' ', ''), ':', '')") == false)
+                                {
+                                    sql_temp.retry();
+                                    SQL_Q.Enqueue(sql_temp);
+                                    Dlog.Info(string.Format("DBThread_Start Retry:{0} Query:{1}", sql_temp.retry_cnt, sql_temp.Query));
+                                }
+                                else
+                                {
+                                    Dlog.Info("History Delete Query is not Retry");
+                                }
                             }
                             else
                             {
+                                AddSQLData(new string[1] { sql_temp.Query });
                                 Dlog.Info(string.Format("DBThread_Start Retry Fail Query : {0}", sql_temp.Query));
                             }
                         }
@@ -230,6 +293,41 @@ namespace AMM
             
         }
 
+        public void AddSQLData(string[] data)
+        {
+            try
+            {
+                if(data[0].Contains("<  REPLACE(REPLACE(REPLACE(CONVERT(varchar, dateadd(month, -6, getdate()), 20), '-', ''), ' ', ''), ':', '')") == true)
+                {
+                    Dlog.Info("Delete Query is not added file");
+                    return;
+                }
+
+                Dlog.Info("Add SQL Data : " + string.Join(";", data));
+
+                string[] dirtemp = DBDataPath.Split('\\');
+                string dir = string.Join("\\", dirtemp, 0, dirtemp.Length - 1);
+
+                if (Directory.Exists(dir) == false)
+                    Directory.CreateDirectory(dir);
+
+                if (File.Exists(DBDataPath) == true)
+                {
+                    System.IO.File.AppendAllLines(DBDataPath, data);
+                }
+                else
+                {
+                    System.IO.File.WriteAllLines(DBDataPath, data);
+                }
+            }
+            catch (Exception ex)
+            {
+                Dlog.Error(ex.StackTrace);
+                Dlog.Error(ex.Message);
+            }
+        }
+
+
         public void AddRPSData(string[] data)
         {
             try
@@ -258,6 +356,39 @@ namespace AMM
                 Wlog.Error(ex.Message);
             }
         }
+
+        public void WriteSQLData(string[] data)
+        {
+            try
+            {
+                if (data.Length != 0)
+                {
+                    System.IO.File.Delete(DBDataPath);
+
+                    Dlog.Info("SQL data file delete");
+
+                    List<string> datatemp = new List<string>();
+
+                    for (int i = 0; i < data.Length; i++)
+                    {
+                        if (data[i] != "")
+                        {
+                            datatemp.Add(data[i]);
+                            Dlog.Info("SQL Data Added : " + data[i]);
+                        }
+                    }
+
+                    System.IO.File.WriteAllLines(DBDataPath, datatemp.ToArray());
+                    Dlog.Info("Data Write Complete");
+                }
+            }
+            catch (Exception ex)
+            {
+                Dlog.Error(ex.StackTrace);
+                Dlog.Error(ex.Message);
+            }
+        }
+
 
         /// <summary>
         /// 데이터 파일 삭제 후 재 생성
@@ -326,7 +457,7 @@ namespace AMM
 
                                 if(RPSTemp[i].Split(';').Length == 2)
                                 {
-                                    RPSData rPS = new RPSData(RPSTemp[i].Split(';')[0] == "GET" ? RPSDataType.Get : RPSDataType.Put, RPSTemp[i].Split(';')[1]);
+                                    RPSData rPS = new RPSData(RPSTemp[i].Split(';')[0].ToUpper() == "GET" ? RPSDataType.Get : RPSDataType.Put, RPSTemp[i].Split(';')[1]);
 
                                     RPS_Q.Enqueue(rPS);
                                     Console.WriteLine("Read");
@@ -371,7 +502,7 @@ namespace AMM
                         DBTemp[i] = DBTemp[i].Replace("\r", "");
                     }
 
-                    Wlog.Info(string.Join(";", DBTemp));
+                    Dlog.Info(string.Join(";", DBTemp));
 
                     if (DBTemp.Length != 0 || DBTemp[0] != null)
                     {
@@ -379,35 +510,33 @@ namespace AMM
                         {
                             if (DBTemp[i] != null && DBTemp[i] != "")
                             {
-                                Wlog.Info("Read Data : " + DBTemp[i]);
+                                Dlog.Info("Read Data : " + DBTemp[i]);
 
-                                if (DBTemp[i].Split(';').Length == 2)
-                                {
-                                    RPSData rPS = new sql_cmd(DBTemp[i].Split(';')[0] == "GET" ? RPSDataType.Get : RPSDataType.Put, DBTemp[i].Split(';')[1]);
+                                sql_cmd DB = new sql_cmd(DBTemp[i]);
 
-                                    SQL_Q.Enqueue(rPS);
-                                    Console.WriteLine("Read");
+                                SQL_Q.Enqueue(DB);
+                                Console.WriteLine("Read");
 
-                                    Wlog.Info("Added Data" + DBTemp[i]);
-                                    DBTemp[i] = "";
-                                }
+                                Dlog.Info("Added Data" + DBTemp[i]);
+                                DBTemp[i] = "";
                             }
                         }
 
-                        WriteRPSData(DBTemp);
+                        WriteSQLData(DBTemp);
 
-                        Wlog.Info("File Write Complete");
+                        Dlog.Info("File Write Complete");
                         return;
                     }
                 }
             }
             catch (Exception ex)
             {
-                Wlog.Error(ex.StackTrace);
-                Wlog.Error(ex.Message);
+                Dlog.Error(ex.StackTrace);
+                Dlog.Error(ex.Message);
             }
-            WriteRPSData(DBTemp);
-            Wlog.Info("Some Thing Wrong File Write Complete");
+
+            WriteSQLData(DBTemp);
+            Dlog.Info("Some Thing Wrong File Write Complete");
         }
 
 
@@ -418,7 +547,7 @@ namespace AMM
             ReturnLogSave("Connect Start");
             if (MSSql != null)
             {
-                //ReturnLogSave("SqlManager is null");
+                log.Info("SqlManager is null");
                 return "NG";
             }
 
@@ -429,13 +558,14 @@ namespace AMM
             if (MSSql.OpenTest() == false)
             {
                 bConnection = false;
-                //ReturnLogSave("OpenTest Fail");
+                log.Info("OpenTest Fail");
                 return "NG";
             }
             else
                 bConnection = true;
 
             ReadRPSData();
+            ReadDBData();
 
             DBThread = new System.Threading.Thread(DBThread_Start);
 
@@ -448,7 +578,7 @@ namespace AMM
                 RPSThread.Start();
 
 
-            //ReturnLogSave("Connect OK");
+            log.Info("Connect OK");
             return "OK";
 
         }
@@ -872,6 +1002,8 @@ namespace AMM
 
             queryList1.Add(query1);
 
+            Dlog.Info(query1);
+
             int nJudge = MSSql.SetData(queryList1); ///return 확인 해서 false 값 날려 야 함.
 
             if (nJudge == 0)
@@ -889,6 +1021,8 @@ namespace AMM
                 strSendtime, strLinecode, strEquipid, strPickingid, strQty, "CREATE", strRequestor);
 
             queryList2.Add(query2);
+
+            Dlog.Info(query2);
 
             nJudge = MSSql.SetData(queryList2); ///return 확인 해서 false 값 날려 야 함.
 
@@ -1003,6 +1137,8 @@ namespace AMM
 
             queryList.Add(query2);
 
+            Dlog.Info(query2);
+
             int nJudge = MSSql.SetData(queryList); ///return 확인 해서 false 값 날려 야 함.
 
             if (nJudge == 0)
@@ -1039,6 +1175,7 @@ namespace AMM
 
                 queryList1.Add(query1);
 
+                Dlog.Info(query1);
 
                 int nJudge = MSSql.SetData(queryList1); ///return 확인 해서 false 값 날려 야 함.
 
@@ -1073,6 +1210,8 @@ namespace AMM
 
                     ReturnLogSave(query2);
                     queryList2.Add(query2);
+
+                    Dlog.Info(query2);
 
                     nJudge = MSSql.SetData(queryList2); //return 확인 해서 false 값 날려 야 함.
 
@@ -1221,6 +1360,8 @@ namespace AMM
                 dt.Rows[0]["QTY"].ToString(), dt.Rows[0]["MANUFACTURER"].ToString(), dt.Rows[0]["PRODUCTION_DATE"].ToString(), dt.Rows[0]["INCH_INFO"].ToString(), dt.Rows[0]["INPUT_TYPE"].ToString(), "MANUAL", dt.Rows[0]["AMKOR_BATCH"].ToString());
 
             queryList.Add(query2);
+
+            Dlog.Info(query2);
 
             int nJudge = MSSql.SetData(queryList); ///return 확인 해서 false 값 날려 야 함.
 
@@ -1398,6 +1539,7 @@ namespace AMM
 
             queryList1.Add(query2);
 
+            Dlog.Info(query2);
 
             int nJudge = MSSql.SetData(queryList1); ///return 확인 해서 false 값 날려 야 함.
 
@@ -1413,6 +1555,7 @@ namespace AMM
             queryList2.Add(Delete_Pickidinfo(strLinecode, strEquipid, strPickingid));
 
             nJudge = MSSql.SetData(queryList2);
+            Dlog.Info(queryList2[0]);
 
             if (nJudge == 0)
             {
@@ -1649,6 +1792,7 @@ namespace AMM
             query = string.Format(@"SELECT * FROM TB_MTL_INFO with(NOLOCK) WHERE UID='{0}'", strInfo[1]);
             DataTable dt = MSSql.GetData(query);
 
+            Dlog.Info(query);
             int nCount = dt.Rows.Count;
 
             if (nCount > 0)
@@ -1662,6 +1806,8 @@ namespace AMM
                 strSendtime, strLinecode, strEquipid, strInfo[0], strInfo[1], strInfo[2], strInfo[3], strInfo[4], strInfo[5], strInfo[6], strInfo[7], strInfo[8]);
 
             queryList1.Add(query2);
+
+            Dlog.Info(query2);
 
             int nJudge = MSSql.SetData(queryList1); ///return 확인 해서 false 값 날려 야 함.
 
@@ -1682,6 +1828,7 @@ namespace AMM
                 strSendtime, strLinecode, strEquipid, "", strInfo[1], "IN", "", strInfo[0], strInfo[2], strInfo[3], strInfo[4], strInfo[5], strInfo[6], strInfo[7], strInfo[8], "");
 
             queryList2.Add(query3);
+            Dlog.Info(query3);
 
             nJudge = MSSql.SetData(queryList2); ///return 확인 해서 false 값 날려 야 함.
 
@@ -2153,8 +2300,8 @@ namespace AMM
             }
             catch (Exception ex)
             {
-                Wlog.Error(ex.StackTrace);
-                Wlog.Error(ex.Message);
+                log.Error(ex.StackTrace);
+                log.Error(ex.Message);
             }
             
 
@@ -2163,7 +2310,7 @@ namespace AMM
         public void Fnc_WriteFile(string strFileName, string strLine)
         {
             File.AppendAllText(strFileName, strLine);
-            Wlog.Info(strLine);
+            log.Info(strLine);
         }
 
         public async Task<string> Fnc_RunAsync(string strKey)
@@ -2204,6 +2351,7 @@ namespace AMM
                 strSendtime, strLinecode, strEquipid, strPrefix, strNumber);
 
             queryList1.Add(query1);
+            Dlog.Info(query1);
 
             int nJudge = MSSql.SetData(queryList1); ///return 확인 해서 false 값 날려 야 함.
 
@@ -2360,6 +2508,7 @@ namespace AMM
                 strSendtime, strLinecode, strEquipid, strErrorcode, strErrortype, strErrorname, strErrordescript, strErrorAction);
 
             queryList1.Add(query1);
+            Dlog.Info(query1);
 
             int nJudge = MSSql.SetData(queryList1); ///return 확인 해서 false 값 날려 야 함.
 
@@ -2404,6 +2553,8 @@ namespace AMM
                 strSendtime, strLinecode, strEquipid, strIndex);
 
             queryList.Add(query);
+            Dlog.Info(query);
+
             int nJudge = MSSql.SetData(queryList); ///return 확인 해서 false 값 날려 야 함.
 
             if (nJudge == 0)
@@ -2458,7 +2609,9 @@ namespace AMM
             query = string.Format(@"INSERT INTO TB_PICK_READY_INFO (LINE_CODE,EQUIP_ID,PICKID,UID,REQUESTOR,TOWER_NO,SID,LOTID,QTY,MANUFACTURER,PRODUCTION_DATE,INCH_INFO,INPUT_TYPE, ORDER_TYPE) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}','{11}','{12}','{13}')",
                 strLinecode, strEquipid, strPickid, strUid, strRequestor, strTwrno, strSid, strLotid, strQty, strManufacturer, strProductiondate, strInchinfo, strInputtype, strOrdertype);
 
+
             queryList.Add(query);
+            Dlog.Info(query);
             int nJudge = MSSql.SetData(queryList); ///return 확인 해서 false 값 날려 야 함.
 
             if (nJudge == 0)
@@ -2494,6 +2647,7 @@ namespace AMM
                 strLinecode, strEquipid, strPickid, strUid, "READY", strRequestor, strTwrno, strSid, strLotid, strQty, strManufacturer, strProductiondate, strInchinfo, strInputtype, strOrdertype, dt.Rows.Count == 0 ? "" : dt.Rows[0]["AMKOR_BATCH"] == null ? "" : dt.Rows[0]["AMKOR_BATCH"].ToString());
 
             queryList.Add(query);
+            Dlog.Info(query);
             int nJudge = MSSql.SetData(queryList); ///return 확인 해서 false 값 날려 야 함.
 
             if (nJudge == 0)
@@ -2632,6 +2786,8 @@ namespace AMM
             query = string.Format(@"INSERT INTO TB_USER_INFO (SID,NAME,SHIFT) VALUES ('{0}','{1}','{2}')", sid, name, shift);
 
             queryList.Add(query);
+            Dlog.Info(query);
+
             int nJudge = MSSql.SetData(queryList); ///return 확인 해서 false 값 날려 야 함.
 
             if (nJudge == 0)
@@ -2701,6 +2857,8 @@ namespace AMM
             query = string.Format(@"INSERT INTO TB_USER_REQ (DATETIME,USER_SID,USER_NAME) VALUES ('{0}','{1}','{2}')", strSendtime, sid, name);
 
             queryList.Add(query);
+            Dlog.Info(query);
+
             int nJudge = MSSql.SetData(queryList);
 
             if (nJudge == 0)
@@ -2883,6 +3041,7 @@ namespace AMM
                 strSendtime, strLinecode, strEquipid, strPickid, "", "CANCEL", "");
 
             queryList2.Add(query2);
+            Dlog.Info(query2);
 
             nJudge = MSSql.SetData(queryList2); ///return 확인 해서 false 값 날려 야 함.
 
@@ -2960,6 +3119,7 @@ namespace AMM
             query1 = string.Format(@"INSERT INTO TB_USER_INFO (DATETIME,SID,NAME) VALUES ('{0}','{1}','{2}')", strSendtime, sid, name);
 
             queryList1.Add(query1);
+            Dlog.Info(query1);
 
             int nJudge = MSSql.SetData(queryList1);
 
@@ -3016,6 +3176,7 @@ namespace AMM
             query1 = string.Format(@"INSERT INTO TB_TOWER_USE (TWR_NAME,TWR_USE) VALUES ('{0}','{1}')", strTower, strUse);
 
             queryList1.Add(query1);
+            Dlog.Info(query1);
 
             int nJudge = MSSql.SetData(queryList1);
 
@@ -3273,6 +3434,7 @@ namespace AMM
                 strSendtime, strLinecode, "0000", strEquipid, strErrorcode, strType, strErrorName, strErrorDescript, strErrorAction);
 
             queryList.Add(query);
+            Dlog.Info(query);
 
             int nJudge = MSSql.SetData(queryList); ///return 확인 해서 false 값 날려 야 함.
 
@@ -3718,6 +3880,7 @@ namespace AMM
                 strSendtime, strMnbr, strBadge, strAction, strReelID, strMtlType, strSID, strVendor, strBatch, strExpireddate, strQty, strUnit, strLocation);
 
             queryList.Add(query);
+            Dlog.Info(query);
 
             int nJudge = MSSql.SetData(queryList);
 
