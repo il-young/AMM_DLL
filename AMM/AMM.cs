@@ -7,6 +7,7 @@ using System.Net.Http.Headers;
 using System.Net;
 using System.IO;
 using System.Linq;
+using Skynet;
 
 namespace AMM
 {
@@ -22,6 +23,7 @@ namespace AMM
         public string RPSDataPath = System.Environment.CurrentDirectory + "\\AMM_DATA\\RPSData.txt";
         public string DBDataPath = System.Environment.CurrentDirectory + "\\AMM_DATA\\DBData.txt";
 
+        public Skynet.Skynet Skynet = new Skynet.Skynet();
         public enum RPSDataType
         {
             Get = 1,
@@ -71,7 +73,7 @@ namespace AMM
 
 
 
-        private void AddSqlQuery(string query)
+        public void AddSqlQuery(string query)
         {
             sql_cmd temp = new sql_cmd();
 
@@ -551,7 +553,9 @@ namespace AMM
                 return "NG";
             }
 
-            string strConnetion = string.Format("server=10.135.200.35;database=ATK4-AMM-DBv1;user id=amm;password=amm@123"); //AMM SERVER
+            //string strConnetion = string.Format("server=10.135.200.35;database=ATK4-AMM-DBv1;user id=amm;password=amm@123"); //AMM SERVER
+            string strConnetion = string.Format("server=10.135.15.18;database=AUTOHW;user id=autohwadm;password=AUTOhw123!"); //AMM SERVER
+
 
             MSSql = new MsSqlManager(strConnetion);
 
@@ -3387,525 +3391,552 @@ namespace AMM
 
         public int Skynet_Exist_EqidCheck(string strLinecode, string strEquipid, int nAlive)
         {
-            string query = "";
-            query = string.Format(@"UPDATE TB_STATUS SET ALIVE='{0}' WHERE LINE_CODE='{1}' and EQUIP_ID='{2}'", nAlive, strLinecode, strEquipid);
-            //GetEqEvent
+            return Skynet.Skynet_Exist_EqidCheck(strLinecode, strEquipid);
 
-            int nJudge = MSSql.SetData(query);
+            //string query = "";
+            //query = string.Format(@"UPDATE TB_STATUS SET ALIVE='{0}' WHERE LINE_CODE='{1}' and EQUIP_ID='{2}'", nAlive, strLinecode, strEquipid);
+            ////GetEqEvent
 
-            ////Skynet////
-            if (bConnection)
-            {
-                Skynet_SM_Alive(strLinecode, "1760", strEquipid, nAlive);
-            }
+            //int nJudge = MSSql.SetData(query);
 
-            return nJudge;
+            //////Skynet////
+            //if (bConnection)
+            //{
+            //    Skynet_SM_Alive(strLinecode, "1760", strEquipid, nAlive);
+            //}
+
+            //return nJudge;
         }
 
         ////Skynet
         public int Skynet_Exist_EqidCheck(string strLinecode, string strEquipid)
         {
-            string query;
+            return Skynet.Skynet_Exist_EqidCheck(strLinecode, strEquipid);
 
-            query = string.Format("IF EXISTS (SELECT EQUIP_ID FROM Skynet.dbo.TB_STATUS with(NOLOCK) WHERE LINE_CODE='{0}' and EQUIP_ID='{1}') BEGIN SELECT 99 CNT END ELSE BEGIN SELECT 55 CNT END", strLinecode, strEquipid);
-            DataTable dt = MSSql.GetData(query);
+            //string query;
 
-            if (dt.Rows.Count == 0)
-            {
-                return -1;
-            }
+            //query = string.Format("IF EXISTS (SELECT EQUIP_ID FROM Skynet.dbo.TB_STATUS with(NOLOCK) WHERE LINE_CODE='{0}' and EQUIP_ID='{1}') BEGIN SELECT 99 CNT END ELSE BEGIN SELECT 55 CNT END", strLinecode, strEquipid);
+            //DataTable dt = MSSql.GetData(query);
 
-            if (dt.Rows[0]["CNT"].ToString() == "99")
-                return 1; //있다
-            else
-                return 0; //없다
+            //if (dt.Rows.Count == 0)
+            //{
+            //    return -1;
+            //}
+
+            //if (dt.Rows[0]["CNT"].ToString() == "99")
+            //    return 1; //있다
+            //else
+            //    return 0; //없다
         }
 
         public int Skynet_EM_DataSend(string strLinecode, string strProcesscode, string strEquipid, string strErrorcode, string strType, string strErrorName, string strErrorDescript, string strErrorAction)
         {
-            string strSendtime = string.Format("{0}{1:00}{2:00}{3:00}{4:00}{5:00}", DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, DateTime.Now.Hour, DateTime.Now.Minute, DateTime.Now.Second);
+            return Skynet.Skynet_EM_DataSend(strLinecode, strProcesscode, strEquipid, strErrorcode, strType, strErrorName, strErrorDescript, strErrorAction);
 
-            List<string> queryList = new List<string>();
-            //queryList.Add(Skynet_EM_Delete(strLinecode, strProcesscode, strEquipid));
+            //string strSendtime = string.Format("{0}{1:00}{2:00}{3:00}{4:00}{5:00}", DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, DateTime.Now.Hour, DateTime.Now.Minute, DateTime.Now.Second);
 
-            string query = "";
+            //List<string> queryList = new List<string>();
+            ////queryList.Add(Skynet_EM_Delete(strLinecode, strProcesscode, strEquipid));
 
-            query = string.Format(@"INSERT INTO Skynet.dbo.TB_EVENT (DATETIME,LINE_CODE,PROCESS_CODE,EQUIP_ID,ERROR_CODE,TYPE,ERROR_NAME,ERROR_DESCRIPT,ERROR_ACTION) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}')",
-                strSendtime, strLinecode, "0000", strEquipid, strErrorcode, strType, strErrorName, strErrorDescript, strErrorAction);
+            //string query = "";
 
-            queryList.Add(query);
-            Dlog.Info(query);
+            //query = string.Format(@"INSERT INTO Skynet.dbo.TB_EVENT (DATETIME,LINE_CODE,PROCESS_CODE,EQUIP_ID,ERROR_CODE,TYPE,ERROR_NAME,ERROR_DESCRIPT,ERROR_ACTION) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}')",
+            //    strSendtime, strLinecode, "0000", strEquipid, strErrorcode, strType, strErrorName, strErrorDescript, strErrorAction);
 
-            int nJudge = MSSql.SetData(queryList); ///return 확인 해서 false 값 날려 야 함.
+            //queryList.Add(query);
+            //Dlog.Info(query);
 
-            if (nJudge == 0)
-                AddSqlQuery(query);
+            //int nJudge = MSSql.SetData(queryList); ///return 확인 해서 false 값 날려 야 함.
 
-            return nJudge; // 1: OK else: fail
+            //if (nJudge == 0)
+            //    AddSqlQuery(query);
+
+            //return nJudge; // 1: OK else: fail
         }
 
         public int Skynet_SM_Send_Run(string strLinecode, string strProcesscode, string strEquipid, string strRemote)
         {
-            string strSendtime = string.Format("{0}{1:00}{2:00}{3:00}{4:00}{5:00}", DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, DateTime.Now.Hour, DateTime.Now.Minute, DateTime.Now.Second);
+            return Skynet.Skynet_SM_Send_Run(strLinecode, strProcesscode, strEquipid, strRemote);
 
-            if (strLinecode == "" || strEquipid == "")
-                return 0;
+            //string strSendtime = string.Format("{0}{1:00}{2:00}{3:00}{4:00}{5:00}", DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, DateTime.Now.Hour, DateTime.Now.Minute, DateTime.Now.Second);
 
-            string query = "";
-            int nReturn = 0;
+            //if (strLinecode == "" || strEquipid == "")
+            //    return 0;
 
-            int nCheck = Skynet_Exist_EqidCheck(strLinecode, strEquipid);
+            //string query = "";
+            //int nReturn = 0;
 
-            if (nCheck == 1) //있음
-            {
-                //Update
-                query = string.Format(@"UPDATE Skynet.dbo.TB_STATUS SET DATETIME = '{0}', STATUS = '{1}', TYPE = '{2}' WHERE LINE_CODE = '{3}' and EQUIP_ID='{4}'", strSendtime, "RUN", strRemote, strLinecode, strEquipid);
+            //int nCheck = Skynet_Exist_EqidCheck(strLinecode, strEquipid);
 
-                nReturn = MSSql.SetData(query);
+            //if (nCheck == 1) //있음
+            //{
+            //    //Update
+            //    query = string.Format(@"UPDATE Skynet.dbo.TB_STATUS SET DATETIME = '{0}', STATUS = '{1}', TYPE = '{2}' WHERE LINE_CODE = '{3}' and EQUIP_ID='{4}'", strSendtime, "RUN", strRemote, strLinecode, strEquipid);
 
-                if (nReturn == 0)
-                {
-                    AddSqlQuery(query);
-                    return 0;
-                }
+            //    nReturn = MSSql.SetData(query);
 
-            }
-            else if (nCheck == 0) // 없음
-            {
-                //Insert
-                query = string.Format(@"INSERT INTO Skynet.dbo.TB_STATUS (DATETIME,LINE_CODE,PROCESS_CODE,EQUIP_ID,STATUS,TYPE) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}')",
-                strSendtime, strLinecode, "0000", strEquipid, "RUN", strRemote);
+            //    if (nReturn == 0)
+            //    {
+            //        AddSqlQuery(query);
+            //        return 0;
+            //    }
 
-                nReturn = MSSql.SetData(query);
+            //}
+            //else if (nCheck == 0) // 없음
+            //{
+            //    //Insert
+            //    query = string.Format(@"INSERT INTO Skynet.dbo.TB_STATUS (DATETIME,LINE_CODE,PROCESS_CODE,EQUIP_ID,STATUS,TYPE) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}')",
+            //    strSendtime, strLinecode, "0000", strEquipid, "RUN", strRemote);
 
-                if (nReturn == 0)
-                {
-                    AddSqlQuery(query);
-                    return 0;
-                }
-            }
-            else
-            {
-                //Error
-                return 0;
-            }
+            //    nReturn = MSSql.SetData(query);
 
-            query = string.Format(@"INSERT INTO Skynet.dbo.TB_STATUS_HISTORY (DATETIME,LINE_CODE,PROCESS_CODE,EQUIP_ID,STATUS,TYPE) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}')",
-                strSendtime, strLinecode, "0000", strEquipid, "RUN", strRemote);
+            //    if (nReturn == 0)
+            //    {
+            //        AddSqlQuery(query);
+            //        return 0;
+            //    }
+            //}
+            //else
+            //{
+            //    //Error
+            //    return 0;
+            //}
 
-            nReturn = MSSql.SetData(query);
+            //query = string.Format(@"INSERT INTO Skynet.dbo.TB_STATUS_HISTORY (DATETIME,LINE_CODE,PROCESS_CODE,EQUIP_ID,STATUS,TYPE) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}')",
+            //    strSendtime, strLinecode, "0000", strEquipid, "RUN", strRemote);
 
-            if (nReturn == 0)
-            {
-                AddSqlQuery(query);
-                return 0;
-            }
+            //nReturn = MSSql.SetData(query);
 
-            return 1;
+            //if (nReturn == 0)
+            //{
+            //    AddSqlQuery(query);
+            //    return 0;
+            //}
+
+            //return 1;
         }
 
         public int Skynet_SM_Send_Run(string strLinecode, string strProcesscode, string strEquipid, string strRemote, string strDeparture, string strArrival)
         {
-            string strSendtime = string.Format("{0}{1:00}{2:00}{3:00}{4:00}{5:00}", DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, DateTime.Now.Hour, DateTime.Now.Minute, DateTime.Now.Second);
+            return Skynet.Skynet_SM_Send_Run(strLinecode, strProcesscode, strEquipid, strRemote, strDeparture, strArrival);
+            
+            //string strSendtime = string.Format("{0}{1:00}{2:00}{3:00}{4:00}{5:00}", DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, DateTime.Now.Hour, DateTime.Now.Minute, DateTime.Now.Second);
 
-            if (strLinecode == "" || strEquipid == "")
-                return 0;
+            //if (strLinecode == "" || strEquipid == "")
+            //    return 0;
 
-            string query = "";
-            int nReturn = 0;
+            //string query = "";
+            //int nReturn = 0;
 
-            int nCheck = Skynet_Exist_EqidCheck(strLinecode, strEquipid);
+            //int nCheck = Skynet_Exist_EqidCheck(strLinecode, strEquipid);
 
-            if (nCheck == 1) //있음
-            {
-                query = string.Format(@"UPDATE Skynet.dbo.TB_STATUS SET DATETIME = '{0}', STATUS = '{1}', TYPE = '{2}', DEPARTURE = '{3}', ARRIVAL = '{4}' WHERE LINE_CODE = '{5}' and EQUIP_ID='{6}'", strSendtime, "RUN", strRemote, strDeparture, strArrival, strLinecode, strEquipid);
+            //if (nCheck == 1) //있음
+            //{
+            //    query = string.Format(@"UPDATE Skynet.dbo.TB_STATUS SET DATETIME = '{0}', STATUS = '{1}', TYPE = '{2}', DEPARTURE = '{3}', ARRIVAL = '{4}' WHERE LINE_CODE = '{5}' and EQUIP_ID='{6}'", strSendtime, "RUN", strRemote, strDeparture, strArrival, strLinecode, strEquipid);
 
-                nReturn = MSSql.SetData(query);
+            //    nReturn = MSSql.SetData(query);
 
-                if (nReturn == 0)
-                {
-                    AddSqlQuery(query);
-                    return 0;
-                }
-            }
-            else if (nCheck == 0) //없음
-            {
-                query = string.Format(@"INSERT INTO Skynet.dbo.TB_STATUS (DATETIME,LINE_CODE,PROCESS_CODE,EQUIP_ID,STATUS,TYPE,DEPARTURE,ARRIVAL) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}')",
-                strSendtime, strLinecode, "0000", strEquipid, "Run", strRemote, strDeparture, strArrival);
+            //    if (nReturn == 0)
+            //    {
+            //        AddSqlQuery(query);
+            //        return 0;
+            //    }
+            //}
+            //else if (nCheck == 0) //없음
+            //{
+            //    query = string.Format(@"INSERT INTO Skynet.dbo.TB_STATUS (DATETIME,LINE_CODE,PROCESS_CODE,EQUIP_ID,STATUS,TYPE,DEPARTURE,ARRIVAL) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}')",
+            //    strSendtime, strLinecode, "0000", strEquipid, "Run", strRemote, strDeparture, strArrival);
 
-                nReturn = MSSql.SetData(query);
+            //    nReturn = MSSql.SetData(query);
 
-                if (nReturn == 0)
-                {
-                    AddSqlQuery(query);
-                    return 0;
-                }
-            }
-            else
-            {
-                return 0;
-            }
+            //    if (nReturn == 0)
+            //    {
+            //        AddSqlQuery(query);
+            //        return 0;
+            //    }
+            //}
+            //else
+            //{
+            //    return 0;
+            //}
 
-            /////Log 저장
-            query = string.Format(@"INSERT INTO Skynet.dbo.TB_STATUS_HISTORY (DATETIME,LINE_CODE,PROCESS_CODE,EQUIP_ID,STATUS,TYPE,DEPARTURE,ARRIVAL) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}')",
-                strSendtime, strLinecode, "0000", strEquipid, "Run", strRemote, strDeparture, strArrival);
+            ///////Log 저장
+            //query = string.Format(@"INSERT INTO Skynet.dbo.TB_STATUS_HISTORY (DATETIME,LINE_CODE,PROCESS_CODE,EQUIP_ID,STATUS,TYPE,DEPARTURE,ARRIVAL) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}')",
+            //    strSendtime, strLinecode, "0000", strEquipid, "Run", strRemote, strDeparture, strArrival);
 
-            nReturn = MSSql.SetData(query);
+            //nReturn = MSSql.SetData(query);
 
-            if (nReturn == 0)
-            {
-                AddSqlQuery(query);
-                return 0;
-            }
+            //if (nReturn == 0)
+            //{
+            //    AddSqlQuery(query);
+            //    return 0;
+            //}
 
-            return 1;
+            //return 1;
         }
 
         public int Skynet_SM_Send_Idle(string strLinecode, string strProcesscode, string strEquipid, string strRemote)
         {
-            string strSendtime = string.Format("{0}{1:00}{2:00}{3:00}{4:00}{5:00}", DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, DateTime.Now.Hour, DateTime.Now.Minute, DateTime.Now.Second);
+            return Skynet.Skynet_SM_Send_Idle(strLinecode, strProcesscode, strEquipid, strRemote);
 
-            if (strLinecode == "" || strEquipid == "")
-                return 0;
+            //string strSendtime = string.Format("{0}{1:00}{2:00}{3:00}{4:00}{5:00}", DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, DateTime.Now.Hour, DateTime.Now.Minute, DateTime.Now.Second);
 
-            string query = "";
-            int nReturn = 0;
+            //if (strLinecode == "" || strEquipid == "")
+            //    return 0;
 
-            int nCheck = Skynet_Exist_EqidCheck(strLinecode, strEquipid);
+            //string query = "";
+            //int nReturn = 0;
 
-            if (nCheck == 1) //있음
-            {
-                query = string.Format(@"UPDATE Skynet.dbo.TB_STATUS SET DATETIME = '{0}', STATUS = '{1}', TYPE = '{2}' WHERE LINE_CODE = '{3}' and EQUIP_ID='{4}'", strSendtime, "IDLE", strRemote, strLinecode, strEquipid);
+            //int nCheck = Skynet_Exist_EqidCheck(strLinecode, strEquipid);
 
-                nReturn = MSSql.SetData(query);
+            //if (nCheck == 1) //있음
+            //{
+            //    query = string.Format(@"UPDATE Skynet.dbo.TB_STATUS SET DATETIME = '{0}', STATUS = '{1}', TYPE = '{2}' WHERE LINE_CODE = '{3}' and EQUIP_ID='{4}'", strSendtime, "IDLE", strRemote, strLinecode, strEquipid);
 
-                if (nReturn == 0)
-                {
-                    AddSqlQuery(query);
-                    return 0;
-                }
-            }
-            else if (nCheck == 0) //없음
-            {
-                query = string.Format(@"INSERT INTO Skynet.dbo.TB_STATUS (DATETIME,LINE_CODE,PROCESS_CODE,EQUIP_ID,STATUS,TYPE) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}')",
-                strSendtime, strLinecode, "0000", strEquipid, "IDLE", strRemote);
+            //    nReturn = MSSql.SetData(query);
 
-                nReturn = MSSql.SetData(query);
+            //    if (nReturn == 0)
+            //    {
+            //        AddSqlQuery(query);
+            //        return 0;
+            //    }
+            //}
+            //else if (nCheck == 0) //없음
+            //{
+            //    query = string.Format(@"INSERT INTO Skynet.dbo.TB_STATUS (DATETIME,LINE_CODE,PROCESS_CODE,EQUIP_ID,STATUS,TYPE) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}')",
+            //    strSendtime, strLinecode, "0000", strEquipid, "IDLE", strRemote);
 
-                if (nReturn == 0)
-                {
-                    AddSqlQuery(query);
-                    return 0;
-                }
-            }
-            else
-            {
-                return 0;
-            }
+            //    nReturn = MSSql.SetData(query);
 
-            /////Log 저장
-            query = string.Format(@"INSERT INTO Skynet.dbo.TB_STATUS_HISTORY (DATETIME,LINE_CODE,PROCESS_CODE,EQUIP_ID,STATUS,TYPE) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}')",
-                strSendtime, strLinecode, "0000", strEquipid, "IDLE", strRemote);
+            //    if (nReturn == 0)
+            //    {
+            //        AddSqlQuery(query);
+            //        return 0;
+            //    }
+            //}
+            //else
+            //{
+            //    return 0;
+            //}
 
-            nReturn = MSSql.SetData(query);
+            ///////Log 저장
+            //query = string.Format(@"INSERT INTO Skynet.dbo.TB_STATUS_HISTORY (DATETIME,LINE_CODE,PROCESS_CODE,EQUIP_ID,STATUS,TYPE) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}')",
+            //    strSendtime, strLinecode, "0000", strEquipid, "IDLE", strRemote);
 
-            if (nReturn == 0)
-            {
-                AddSqlQuery(query);
-                return 0;
-            }
+            //nReturn = MSSql.SetData(query);
 
-            return 1;
+            //if (nReturn == 0)
+            //{
+            //    AddSqlQuery(query);
+            //    return 0;
+            //}
+
+            //return 1;
         }
 
         public int Skynet_SM_Send_Alarm(string strLinecode, string strProcesscode, string strEquipid, string strRemote)
         {
-            string strSendtime = string.Format("{0}{1:00}{2:00}{3:00}{4:00}{5:00}", DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, DateTime.Now.Hour, DateTime.Now.Minute, DateTime.Now.Second);
+            return Skynet.Skynet_SM_Send_Alarm(strLinecode, strProcesscode, strEquipid, strRemote);
+            //string strSendtime = string.Format("{0}{1:00}{2:00}{3:00}{4:00}{5:00}", DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, DateTime.Now.Hour, DateTime.Now.Minute, DateTime.Now.Second);
 
-            if (strLinecode == "" || strEquipid == "")
-                return 0;
+            //if (strLinecode == "" || strEquipid == "")
+            //    return 0;
 
-            string query = "";
-            int nReturn = 0;
+            //string query = "";
+            //int nReturn = 0;
 
-            int nCheck = Skynet_Exist_EqidCheck(strLinecode, strEquipid);
+            //int nCheck = Skynet_Exist_EqidCheck(strLinecode, strEquipid);
 
-            if (nCheck == 1) //있음
-            {
-                query = string.Format(@"UPDATE Skynet.dbo.TB_STATUS SET DATETIME = '{0}', STATUS = '{1}', TYPE = '{2}' WHERE LINE_CODE = '{3}' and EQUIP_ID='{4}'", strSendtime, "ALARM", strRemote, strLinecode, strEquipid);
+            //if (nCheck == 1) //있음
+            //{
+            //    query = string.Format(@"UPDATE Skynet.dbo.TB_STATUS SET DATETIME = '{0}', STATUS = '{1}', TYPE = '{2}' WHERE LINE_CODE = '{3}' and EQUIP_ID='{4}'", strSendtime, "ALARM", strRemote, strLinecode, strEquipid);
 
-                nReturn = MSSql.SetData(query);
+            //    nReturn = MSSql.SetData(query);
 
-                if (nReturn == 0)
-                {
-                    AddSqlQuery(query);
-                    return 0;
-                }
-            }
-            else if (nCheck == 0) //없음
-            {
-                query = string.Format(@"INSERT INTO Skynet.dbo.TB_STATUS (DATETIME,LINE_CODE,PROCESS_CODE,EQUIP_ID,STATUS,TYPE) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}')",
-                strSendtime, strLinecode, "0000", strEquipid, "ALARM", strRemote);
+            //    if (nReturn == 0)
+            //    {
+            //        AddSqlQuery(query);
+            //        return 0;
+            //    }
+            //}
+            //else if (nCheck == 0) //없음
+            //{
+            //    query = string.Format(@"INSERT INTO Skynet.dbo.TB_STATUS (DATETIME,LINE_CODE,PROCESS_CODE,EQUIP_ID,STATUS,TYPE) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}')",
+            //    strSendtime, strLinecode, "0000", strEquipid, "ALARM", strRemote);
 
-                nReturn = MSSql.SetData(query);
+            //    nReturn = MSSql.SetData(query);
 
-                if (nReturn == 0)
-                {
-                    AddSqlQuery(query);
-                    return 0;
-                }
-            }
-            else
-            {
-                return 0;
-            }
+            //    if (nReturn == 0)
+            //    {
+            //        AddSqlQuery(query);
+            //        return 0;
+            //    }
+            //}
+            //else
+            //{
+            //    return 0;
+            //}
 
-            /////Log 저장
-            query = string.Format(@"INSERT INTO Skynet.dbo.TB_STATUS_HISTORY (DATETIME,LINE_CODE,PROCESS_CODE,EQUIP_ID,STATUS,TYPE) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}')",
-                strSendtime, strLinecode, "0000", strEquipid, "ALARM", strRemote);
+            ///////Log 저장
+            //query = string.Format(@"INSERT INTO Skynet.dbo.TB_STATUS_HISTORY (DATETIME,LINE_CODE,PROCESS_CODE,EQUIP_ID,STATUS,TYPE) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}')",
+            //    strSendtime, strLinecode, "0000", strEquipid, "ALARM", strRemote);
 
-            nReturn = MSSql.SetData(query);
+            //nReturn = MSSql.SetData(query);
 
-            if (nReturn == 0)
-            {
-                AddSqlQuery(query);
-                return 0;
-            }
+            //if (nReturn == 0)
+            //{
+            //    AddSqlQuery(query);
+            //    return 0;
+            //}
 
-            return 1;
+            //return 1;
         }
 
         public int Skynet_SM_Send_Setup(string strLinecode, string strProcesscode, string strEquipid, string strRemote)
         {
-            string strSendtime = string.Format("{0}{1:00}{2:00}{3:00}{4:00}{5:00}", DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, DateTime.Now.Hour, DateTime.Now.Minute, DateTime.Now.Second);
+            return Skynet.Skynet_SM_Send_Setup(strLinecode, strProcesscode, strEquipid, strRemote);
+            //string strSendtime = string.Format("{0}{1:00}{2:00}{3:00}{4:00}{5:00}", DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, DateTime.Now.Hour, DateTime.Now.Minute, DateTime.Now.Second);
 
-            if (strLinecode == "" || strEquipid == "")
-                return 0;
+            //if (strLinecode == "" || strEquipid == "")
+            //    return 0;
 
-            string query = "";
-            int nReturn = 0;
+            //string query = "";
+            //int nReturn = 0;
 
-            int nCheck = Skynet_Exist_EqidCheck(strLinecode, strEquipid);
+            //int nCheck = Skynet_Exist_EqidCheck(strLinecode, strEquipid);
 
-            if (nCheck == 1) //있음
-            {
-                query = string.Format(@"UPDATE Skynet.dbo.TB_STATUS SET DATETIME = '{0}', STATUS = '{1}', TYPE = '{2}' WHERE LINE_CODE = '{3}' and EQUIP_ID='{4}'", strSendtime, "SETUP", strRemote, strLinecode, strEquipid);
+            //if (nCheck == 1) //있음
+            //{
+            //    query = string.Format(@"UPDATE Skynet.dbo.TB_STATUS SET DATETIME = '{0}', STATUS = '{1}', TYPE = '{2}' WHERE LINE_CODE = '{3}' and EQUIP_ID='{4}'", strSendtime, "SETUP", strRemote, strLinecode, strEquipid);
 
-                nReturn = MSSql.SetData(query);
+            //    nReturn = MSSql.SetData(query);
 
-                if (nReturn == 0)
-                {
-                    AddSqlQuery(query);
-                    return 0;
-                }
-            }
-            else if (nCheck == 0) //없음
-            {
-                query = string.Format(@"INSERT INTO Skynet.dbo.TB_STATUS (DATETIME,LINE_CODE,PROCESS_CODE,EQUIP_ID,STATUS,TYPE) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}')",
-                strSendtime, strLinecode, "0000", strEquipid, "SETUP", strRemote);
+            //    if (nReturn == 0)
+            //    {
+            //        AddSqlQuery(query);
+            //        return 0;
+            //    }
+            //}
+            //else if (nCheck == 0) //없음
+            //{
+            //    query = string.Format(@"INSERT INTO Skynet.dbo.TB_STATUS (DATETIME,LINE_CODE,PROCESS_CODE,EQUIP_ID,STATUS,TYPE) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}')",
+            //    strSendtime, strLinecode, "0000", strEquipid, "SETUP", strRemote);
 
-                nReturn = MSSql.SetData(query);
+            //    nReturn = MSSql.SetData(query);
 
-                if (nReturn == 0)
-                {
-                    AddSqlQuery(query);
-                    return 0;
-                }
-            }
-            else
-            {
-                return 0;
-            }
+            //    if (nReturn == 0)
+            //    {
+            //        AddSqlQuery(query);
+            //        return 0;
+            //    }
+            //}
+            //else
+            //{
+            //    return 0;
+            //}
 
-            /////Log 저장
-            query = string.Format(@"INSERT INTO Skynet.dbo.TB_STATUS_HISTORY (DATETIME,LINE_CODE,PROCESS_CODE,EQUIP_ID,STATUS,TYPE) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}')",
-                strSendtime, strLinecode, "0000", strEquipid, "SETUP", strRemote);
+            ///////Log 저장
+            //query = string.Format(@"INSERT INTO Skynet.dbo.TB_STATUS_HISTORY (DATETIME,LINE_CODE,PROCESS_CODE,EQUIP_ID,STATUS,TYPE) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}')",
+            //    strSendtime, strLinecode, "0000", strEquipid, "SETUP", strRemote);
 
-            nReturn = MSSql.SetData(query);
+            //nReturn = MSSql.SetData(query);
 
-            if (nReturn == 0)
-            {
-                AddSqlQuery(query);
-                return 0;
-            }
+            //if (nReturn == 0)
+            //{
+            //    AddSqlQuery(query);
+            //    return 0;
+            //}
 
-            return 1;
+            //return 1;
         }
 
         public int Skynet_SM_Alive(string strLinecode, string strProcesscode, string strEquipid, int nAlive)
         {
-            string query = "";
-            query = string.Format(@"UPDATE Skynet.dbo.TB_STATUS SET ALIVE='{0}' WHERE LINE_CODE='{1}' and EQUIP_ID='{2}'", nAlive, strLinecode, strEquipid);
+            return Skynet.Skynet_SM_Alive(strLinecode, strProcesscode, strEquipid, nAlive);
 
-            int nJudge = MSSql.SetData(query);
+            //string query = "";
+            //query = string.Format(@"UPDATE Skynet.dbo.TB_STATUS SET ALIVE='{0}' WHERE LINE_CODE='{1}' and EQUIP_ID='{2}'", nAlive, strLinecode, strEquipid);
 
-            return nJudge;
+            //int nJudge = MSSql.SetData(query);
+
+            //return nJudge;
         }
 
         public string Skynet_SM_Delete(string strLinecode, string strProcesscode, string strEquipid)
         {
-            string query = "";
+            return Skynet.Skynet_SM_Delete(strLinecode, strProcesscode, strEquipid);
+            //string query = "";
 
-            query = string.Format("DELETE FROM Skynet.dbo.TB_STATUS WHERE LINE_CODE='{0}' and EQUIP_ID='{1}'", strLinecode, strEquipid);
+            //query = string.Format("DELETE FROM Skynet.dbo.TB_STATUS WHERE LINE_CODE='{0}' and EQUIP_ID='{1}'", strLinecode, strEquipid);
 
-            return query;
+            //return query;
         }
 
         public int Skynet_PM_Start(string strLinecode, string strProcesscode, string strEquipid)
         {
-            string strSendtime = string.Format("{0}{1:00}{2:00}{3:00}{4:00}{5:00}", DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, DateTime.Now.Hour, DateTime.Now.Minute, DateTime.Now.Second);
+            return Skynet.Skynet_PM_Start(strLinecode, strProcesscode, strEquipid);
 
-            if (strLinecode == "" || strEquipid == "")
-                return 0;
+            //string strSendtime = string.Format("{0}{1:00}{2:00}{3:00}{4:00}{5:00}", DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, DateTime.Now.Hour, DateTime.Now.Minute, DateTime.Now.Second);
 
-            string query = "";
-            int nReturn = 0;
+            //if (strLinecode == "" || strEquipid == "")
+            //    return 0;
 
-            int nCheck = Skynet_Exist_EqidCheck(strLinecode, strEquipid);
+            //string query = "";
+            //int nReturn = 0;
 
-            if (nCheck != 1)
-                return 0;
+            //int nCheck = Skynet_Exist_EqidCheck(strLinecode, strEquipid);
 
-            if (nCheck == 1) //있음
-            {
-                query = string.Format(@"UPDATE Skynet.dbo.TB_STATUS SET DATETIME = '{0}', STATUS = '{1}', TYPE = '{2}' WHERE LINE_CODE = '{3}' and EQUIP_ID='{4}'", strSendtime, "START", "START", strLinecode, strEquipid);
+            //if (nCheck != 1)
+            //    return 0;
 
-                nReturn = MSSql.SetData(query);
+            //if (nCheck == 1) //있음
+            //{
+            //    query = string.Format(@"UPDATE Skynet.dbo.TB_STATUS SET DATETIME = '{0}', STATUS = '{1}', TYPE = '{2}' WHERE LINE_CODE = '{3}' and EQUIP_ID='{4}'", strSendtime, "START", "START", strLinecode, strEquipid);
 
-                if (nReturn == 0)
-                {
-                    AddSqlQuery(query);
-                    return 0;
-                }
-            }
-            else if (nCheck == 0) //없음
-            {
-                query = string.Format(@"INSERT INTO Skynet.dbo.TB_STATUS (DATETIME,LINE_CODE,PROCESS_CODE,EQUIP_ID,STATUS,TYPE) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}')",
-                strSendtime, strLinecode, "0000", strEquipid, "START", "START");
+            //    nReturn = MSSql.SetData(query);
 
-                nReturn = MSSql.SetData(query);
+            //    if (nReturn == 0)
+            //    {
+            //        AddSqlQuery(query);
+            //        return 0;
+            //    }
+            //}
+            //else if (nCheck == 0) //없음
+            //{
+            //    query = string.Format(@"INSERT INTO Skynet.dbo.TB_STATUS (DATETIME,LINE_CODE,PROCESS_CODE,EQUIP_ID,STATUS,TYPE) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}')",
+            //    strSendtime, strLinecode, "0000", strEquipid, "START", "START");
 
-                if (nReturn == 0)
-                {
-                    AddSqlQuery(query);
-                    return 0;
-                }
-            }
-            else
-            {
-                return 0;
-            }
-            /////Log 저장
-            query = string.Format(@"INSERT INTO Skynet.dbo.TB_STATUS_HISTORY (DATETIME,LINE_CODE,PROCESS_CODE,EQUIP_ID,STATUS,TYPE) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}')",
-                strSendtime, strLinecode, "0000", strEquipid, "START", "START");
+            //    nReturn = MSSql.SetData(query);
 
-            nReturn = MSSql.SetData(query);
+            //    if (nReturn == 0)
+            //    {
+            //        AddSqlQuery(query);
+            //        return 0;
+            //    }
+            //}
+            //else
+            //{
+            //    return 0;
+            //}
+            ///////Log 저장
+            //query = string.Format(@"INSERT INTO Skynet.dbo.TB_STATUS_HISTORY (DATETIME,LINE_CODE,PROCESS_CODE,EQUIP_ID,STATUS,TYPE) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}')",
+            //    strSendtime, strLinecode, "0000", strEquipid, "START", "START");
 
-            if (nReturn == 0)
-            {
-                AddSqlQuery(query);
-                return 0;
-            }
+            //nReturn = MSSql.SetData(query);
 
-            return 1;
+            //if (nReturn == 0)
+            //{
+            //    AddSqlQuery(query);
+            //    return 0;
+            //}
+
+            //return 1;
         }
 
         public int Skynet_PM_End(string strLinecode, string strProcesscode, string strEquipid)
         {
-            string strSendtime = string.Format("{0}{1:00}{2:00}{3:00}{4:00}{5:00}", DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, DateTime.Now.Hour, DateTime.Now.Minute, DateTime.Now.Second);
+            return Skynet.Skynet_PM_End(strLinecode, strProcesscode, strEquipid);
 
-            if (strLinecode == "" || strEquipid == "")
-                return 0;
+            //string strSendtime = string.Format("{0}{1:00}{2:00}{3:00}{4:00}{5:00}", DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, DateTime.Now.Hour, DateTime.Now.Minute, DateTime.Now.Second);
 
-            string query = "";
-            int nReturn = 0;
+            //if (strLinecode == "" || strEquipid == "")
+            //    return 0;
 
-            int nCheck = Skynet_Exist_EqidCheck(strLinecode, strEquipid);
+            //string query = "";
+            //int nReturn = 0;
 
-            if (nCheck != 1)
-                return 0;
+            //int nCheck = Skynet_Exist_EqidCheck(strLinecode, strEquipid);
 
-            if (nCheck == 1) //있음
-            {
-                query = string.Format(@"UPDATE Skynet.dbo.TB_STATUS SET DATETIME = '{0}', STATUS = '{1}', TYPE = '{2}' WHERE LINE_CODE = '{3}' and EQUIP_ID='{4}'", strSendtime, "END", "END", strLinecode, strEquipid);
+            //if (nCheck != 1)
+            //    return 0;
 
-                nReturn = MSSql.SetData(query);
+            //if (nCheck == 1) //있음
+            //{
+            //    query = string.Format(@"UPDATE Skynet.dbo.TB_STATUS SET DATETIME = '{0}', STATUS = '{1}', TYPE = '{2}' WHERE LINE_CODE = '{3}' and EQUIP_ID='{4}'", strSendtime, "END", "END", strLinecode, strEquipid);
 
-                if (nReturn == 0)
-                {
-                    AddSqlQuery(query);
-                    return 0;
-                }
-            }
-            else if (nCheck == 0) //없음
-            {
-                query = string.Format(@"INSERT INTO Skynet.dbo.TB_STATUS (DATETIME,LINE_CODE,PROCESS_CODE,EQUIP_ID,STATUS,TYPE) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}')",
-                strSendtime, strLinecode, "0000", strEquipid, "END", "END");
+            //    nReturn = MSSql.SetData(query);
 
-                nReturn = MSSql.SetData(query);
+            //    if (nReturn == 0)
+            //    {
+            //        AddSqlQuery(query);
+            //        return 0;
+            //    }
+            //}
+            //else if (nCheck == 0) //없음
+            //{
+            //    query = string.Format(@"INSERT INTO Skynet.dbo.TB_STATUS (DATETIME,LINE_CODE,PROCESS_CODE,EQUIP_ID,STATUS,TYPE) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}')",
+            //    strSendtime, strLinecode, "0000", strEquipid, "END", "END");
 
-                if (nReturn == 0)
-                {
-                    AddSqlQuery(query);
-                    return 0;
-                }
-            }
-            else
-            {
-                return 0;
-            }
-            /////Log 저장
-            query = string.Format(@"INSERT INTO Skynet.dbo.TB_STATUS_HISTORY (DATETIME,LINE_CODE,PROCESS_CODE,EQUIP_ID,STATUS,TYPE) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}')",
-                strSendtime, strLinecode, "0000", strEquipid, "END", "END");
+            //    nReturn = MSSql.SetData(query);
 
-            nReturn = MSSql.SetData(query);
+            //    if (nReturn == 0)
+            //    {
+            //        AddSqlQuery(query);
+            //        return 0;
+            //    }
+            //}
+            //else
+            //{
+            //    return 0;
+            //}
+            ///////Log 저장
+            //query = string.Format(@"INSERT INTO Skynet.dbo.TB_STATUS_HISTORY (DATETIME,LINE_CODE,PROCESS_CODE,EQUIP_ID,STATUS,TYPE) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}')",
+            //    strSendtime, strLinecode, "0000", strEquipid, "END", "END");
 
-            if (nReturn == 0)
-            {
-                AddSqlQuery(query);
-                return 0;
-            }
+            //nReturn = MSSql.SetData(query);
 
-            return 1;
+            //if (nReturn == 0)
+            //{
+            //    AddSqlQuery(query);
+            //    return 0; 
+            //}
+
+            //return 1;
         }
         public int Skynet_Set_Webservice_Faileddata(string strMnbr, string strBadge, string strAction, string strReelID, string strMtlType, string strSID, string strVendor, string strBatch, string strExpireddate, string strQty, string strUnit, string strLocation)
         {
-            string strSendtime = string.Format("{0}{1:00}{2:00}{3:00}{4:00}{5:00}", DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, DateTime.Now.Hour, DateTime.Now.Minute, DateTime.Now.Second);
+            return Skynet.Skynet_Set_Webservice_Faileddata(strMnbr, strBadge, strAction, strReelID, strMtlType, strSID, strVendor, strBatch, strExpireddate, strQty, strUnit, strLocation);
 
-            List<string> queryList = new List<string>();
+            //string strSendtime = string.Format("{0}{1:00}{2:00}{3:00}{4:00}{5:00}", DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, DateTime.Now.Hour, DateTime.Now.Minute, DateTime.Now.Second);
 
-            string query = "";
+            //List<string> queryList = new List<string>();
 
-            query = string.Format(@"INSERT INTO Skynet.dbo.TB_WEBSERVICE_STB (DATETIME,MNBR,BADGE,ACTION,REEL_ID,MTL_TYPE,SID,VENDOR,BATCH,EXPIRED_DATE,QTY,UNIT,LOCATION) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}','{11}','{12}')",
-                strSendtime, strMnbr, strBadge, strAction, strReelID, strMtlType, strSID, strVendor, strBatch, strExpireddate, strQty, strUnit, strLocation);
+            //string query = "";
 
-            queryList.Add(query);
-            Dlog.Info(query);
+            //query = string.Format(@"INSERT INTO Skynet.dbo.TB_WEBSERVICE_STB (DATETIME,MNBR,BADGE,ACTION,REEL_ID,MTL_TYPE,SID,VENDOR,BATCH,EXPIRED_DATE,QTY,UNIT,LOCATION) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}','{11}','{12}')",
+            //    strSendtime, strMnbr, strBadge, strAction, strReelID, strMtlType, strSID, strVendor, strBatch, strExpireddate, strQty, strUnit, strLocation);
 
-            int nJudge = MSSql.SetData(queryList);
+            //queryList.Add(query);
+            //Dlog.Info(query);
 
-            return nJudge;
+            //int nJudge = MSSql.SetData(queryList);
+
+            //return nJudge;
         }
         public DataTable Skynet_Get_Webservice_Faileddata(string strLocation)
         {
-            string query = "";
+            return Skynet.Skynet_Get_Webservice_Faileddata(strLocation);
 
-            query = string.Format(@"SELECT * FROM Skynet.dbo.TB_WEBSERVICE_STB with(NOLOCK) WHERE LOCATION={0}", strLocation);
+            //string query = "";
 
-            DataTable dt = MSSql.GetData(query);
+            //query = string.Format(@"SELECT * FROM Skynet.dbo.TB_WEBSERVICE_STB with(NOLOCK) WHERE LOCATION={0}", strLocation);
 
-            return dt;
+            //DataTable dt = MSSql.GetData(query);
+
+            //return dt;
         }
 
         public int Skynet_Webservice_Faileddata_Delete(string strReelid)
         {
-            string query = "";
+            return Skynet.Skynet_Webservice_Faileddata_Delete(strReelid);
 
-            query = string.Format("DELETE FROM Skynet.dbo.TB_WEBSERVICE_STB with(NOLOCK) WHERE REEL_ID='{0}'", strReelid);
+            //string query = "";
 
-            int nJudge = MSSql.SetData(query);
+            //query = string.Format("DELETE FROM Skynet.dbo.TB_WEBSERVICE_STB with(NOLOCK) WHERE REEL_ID='{0}'", strReelid);
 
-            return nJudge;
+            //int nJudge = MSSql.SetData(query);
+
+            //return nJudge;
         }
 
         /// <summary>
@@ -3915,7 +3946,7 @@ namespace AMM
         private int DeleteHistory()
         {
             //int nJudge = MSSql.SetData("delete from [ATK4-AMM-DBv1].dbo.TB_PICK_INOUT_HISTORY where 1=1 and [DATETIME] <  REPLACE(REPLACE(REPLACE(CONVERT(varchar, dateadd(month, -6, getdate()), 20), '-', ''), ' ', ''), ':', '')");
-            AddSqlQuery("delete from [ATK4-AMM-DBv1].dbo.TB_PICK_INOUT_HISTORY where 1=1 and [DATETIME] <  REPLACE(REPLACE(REPLACE(CONVERT(varchar, dateadd(month, -6, getdate()), 20), '-', ''), ' ', ''), ':', '')");
+            AddSqlQuery("delete from TB_PICK_INOUT_HISTORY where 1=1 and [DATETIME] <  REPLACE(REPLACE(REPLACE(CONVERT(varchar, dateadd(month, -6, getdate()), 20), '-', ''), ' ', ''), ':', '')");
             //return nJudge;
             return 0;
         }
