@@ -1795,21 +1795,37 @@ namespace AMM
             ////////2. 자재 확인
             string query = "", query2 = "", query3 = "";
 
-            query = string.Format(@"SELECT * FROM TB_MTL_INFO with(NOLOCK) WHERE UID='{0}'", strInfo[1]);
+            query = string.Format(@"SELECT * FROM TB_MTL_INFO with(NOLOCK) WHERE UID='{0}'", strInfo[1].Trim());
             DataTable dt = MSSql.GetData(query);
 
             Dlog.Info(query);
             int nCount = dt.Rows.Count;
 
             if (nCount > 0)
+            {
+                // 기존 중복된 UID가 있어서 Update 함
+                List<string> qList1 = new List<string>();
+                string Sendtime = string.Format("{0}{1:00}{2:00}{3:00}{4:00}{5:00}", DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, DateTime.Now.Hour, DateTime.Now.Minute, DateTime.Now.Second);
+
+                query2 = $"UPDATE TB_MTL_INFO SET EQUIP_ID='{strEquipid}', TOWER_NO='{strInfo[0]}', QTY='{strInfo[4]}'  WHERE UID = strInfo[1].Trim()";
+                //query2 = string.Format(@"INSERT INTO TB_MTL_INFO (DATETIME,LINE_CODE,EQUIP_ID,TOWER_NO,UID,SID,LOTID,QTY,MANUFACTURER,PRODUCTION_DATE,INCH_INFO,INPUT_TYPE) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}','{11}')",
+                //Sendtime, strLinecode, strEquipid, strInfo[0], strInfo[1].Trim(), strInfo[2], strInfo[3], strInfo[4], strInfo[5], strInfo[6], strInfo[7], strInfo[8]);
+
+                qList1.Add(query2);
+
+                Dlog.Info(query2);
+
+                MSSql.SetData(qList1);
+
                 return "DUPLICATE";
+            }
 
             //////3. DB 저장
             string strSendtime = string.Format("{0}{1:00}{2:00}{3:00}{4:00}{5:00}", DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, DateTime.Now.Hour, DateTime.Now.Minute, DateTime.Now.Second);
 
             List<string> queryList1 = new List<string>();
             query2 = string.Format(@"INSERT INTO TB_MTL_INFO (DATETIME,LINE_CODE,EQUIP_ID,TOWER_NO,UID,SID,LOTID,QTY,MANUFACTURER,PRODUCTION_DATE,INCH_INFO,INPUT_TYPE) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}','{11}')",
-                strSendtime, strLinecode, strEquipid, strInfo[0], strInfo[1], strInfo[2], strInfo[3], strInfo[4], strInfo[5], strInfo[6], strInfo[7], strInfo[8]);
+                strSendtime, strLinecode, strEquipid, strInfo[0], strInfo[1].Trim(), strInfo[2], strInfo[3], strInfo[4], strInfo[5], strInfo[6], strInfo[7], strInfo[8]);
 
             queryList1.Add(query2);
 
@@ -2495,7 +2511,7 @@ namespace AMM
         {
             string query = "";
 
-            query = string.Format(@"SELECT * FROM TB_MTL_INFO with(NOLOCK) WHERE LINE_CODE='{0}' and EQUIP_ID='{1}' and UID='{2}'", strLinecode, strEquipid, strUID);
+            query = string.Format(@"SELECT * FROM TB_MTL_INFO with(NOLOCK) WHERE LINE_CODE='{0}' and EQUIP_ID='{1}' and UID like '{2}_'", strLinecode, strEquipid, strUID);
 
             DataTable dt = MSSql.GetData(query);
 
@@ -2713,7 +2729,7 @@ namespace AMM
         {
             string query = "";
 
-            query = string.Format("IF EXISTS (SELECT UID FROM TB_PICK_LIST_INFO with(NOLOCK) WHERE UID='{0}') BEGIN SELECT 99 CNT END ELSE BEGIN SELECT 55 CNT END", uid);
+            query = string.Format("IF EXISTS (SELECT UID FROM TB_PICK_LIST_INFO with(NOLOCK) WHERE UID = '{0}') BEGIN SELECT 99 CNT END ELSE BEGIN SELECT 55 CNT END", uid);
             DataTable dt = MSSql.GetData(query);
 
             if (dt.Rows.Count == 0)
