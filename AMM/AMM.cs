@@ -1807,7 +1807,7 @@ namespace AMM
                 List<string> qList1 = new List<string>();
                 string Sendtime = string.Format("{0}{1:00}{2:00}{3:00}{4:00}{5:00}", DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, DateTime.Now.Hour, DateTime.Now.Minute, DateTime.Now.Second);
 
-                query2 = $"UPDATE TB_MTL_INFO SET EQUIP_ID='{strEquipid}', TOWER_NO='{strInfo[0]}', QTY='{strInfo[4]}'  WHERE UID = strInfo[1].Trim()";
+                query2 = $"UPDATE TB_MTL_INFO SET EQUIP_ID='{strEquipid}', TOWER_NO='{strInfo[0]}', QTY='{strInfo[4]}'  WHERE UID = '{strInfo[1].Trim()}'";
                 //query2 = string.Format(@"INSERT INTO TB_MTL_INFO (DATETIME,LINE_CODE,EQUIP_ID,TOWER_NO,UID,SID,LOTID,QTY,MANUFACTURER,PRODUCTION_DATE,INCH_INFO,INPUT_TYPE) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}','{11}')",
                 //Sendtime, strLinecode, strEquipid, strInfo[0], strInfo[1].Trim(), strInfo[2], strInfo[3], strInfo[4], strInfo[5], strInfo[6], strInfo[7], strInfo[8]);
 
@@ -1817,7 +1817,7 @@ namespace AMM
 
                 MSSql.SetData(qList1);
 
-                return "DUPLICATE";
+                return "Update";
             }
 
             //////3. DB 저장
