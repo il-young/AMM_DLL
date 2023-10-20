@@ -8,6 +8,7 @@ using System.Net;
 using System.IO;
 using System.Linq;
 using Skynet;
+using System.Text;
 
 namespace AMM
 {
@@ -1766,6 +1767,38 @@ namespace AMM
                 ReturnLogSave(string.Format("UpdateBooking Fail : {0}", ex.Message));
             }
         }
+
+        public string GetRandomString(int digit)
+        {
+            int numDigits = digit;
+
+            StringBuilder result = new StringBuilder();
+            Random rand = new Random();
+
+            for (int i = 0; i < numDigits; i++)
+            {
+                int randNum = rand.Next(36);
+                char randChar = randNum < 10 ? (char)('0' + randNum) : (char)('a' + randNum - 10);
+                result.Append(randChar);
+            }
+
+            return result.ToString();
+        }
+
+        public void SyncDataInsert(string eqpID, string towerNO, string uid, string sid, string lot, string qty, string manufacturer, string proDate, string inch, string input)
+        {
+            List<string> queryList1 = new List<string>();
+            string query2 = string.Format($"INSERT INTO TB_MTL_INFO (DATETIME,LINE_CODE,EQUIP_ID,TOWER_NO,UID,SID,LOTID,QTY,MANUFACTURER,PRODUCTION_DATE,INCH_INFO,INPUT_TYPE) VALUES " +
+                $"                                          (getdatetime(), 'AJ54100', '{eqpID}', '{towerNO}', '{uid}', '{sid}', '{lot}', '{qty}', '{manufacturer}', '{proDate}', '{inch}', '{input}')");
+                //strSendtime, strLinecode, strEquipid, strInfo[0], strInfo[1].Trim(), strInfo[2], strInfo[3], strInfo[4], strInfo[5], strInfo[6], strInfo[7], strInfo[8]);
+
+            queryList1.Add(query2);
+
+            Dlog.Info(query2);
+
+            int nJudge = MSSql.SetData(queryList1);
+        }
+
 
         public string SetLoadComplete(string strLinecode, string strEquipid, string strBcrinfo, bool bWebservice)
         {
