@@ -1815,7 +1815,15 @@ namespace AMM
 
                 Dlog.Info(query2);
 
-                MSSql.SetData(qList1);
+                string strdate = string.Format("{0}{1:00}{2:00}{3:00}{4:00}{5:00}", DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, DateTime.Now.Hour, DateTime.Now.Minute, DateTime.Now.Second); ;
+
+                query3 = string.Format(@"INSERT INTO TB_PICK_INOUT_HISTORY (DATETIME,LINE_CODE,EQUIP_ID,PICKID,UID,STATUS,REQUESTOR,TOWER_NO,SID,LOTID,QTY,MANUFACTURER,PRODUCTION_DATE,INCH_INFO,INPUT_TYPE,AMKOR_BATCH ) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}','{11}','{12}','{13}','{14}', '{15}')",
+                strdate, strLinecode, strEquipid, "", strInfo[1], "IN", "", strInfo[0], strInfo[2], strInfo[3], strInfo[4], strInfo[5], strInfo[6], strInfo[7], strInfo[8], "");
+                
+                qList1.Add(query3);
+                Dlog.Info(query3);
+
+                int b = MSSql.SetData(qList1);
 
                 return "Update";
             }
