@@ -1789,7 +1789,7 @@ namespace AMM
         {
             List<string> queryList1 = new List<string>();
             string query2 = string.Format($"INSERT INTO TB_MTL_INFO (DATETIME,LINE_CODE,EQUIP_ID,TOWER_NO,UID,SID,LOTID,QTY,MANUFACTURER,PRODUCTION_DATE,INCH_INFO,INPUT_TYPE) VALUES " +
-                $"                                          (getdatetime(), 'AJ54100', '{eqpID}', '{towerNO}', '{uid}', '{sid}', '{lot}', '{qty}', '{manufacturer}', '{proDate}', '{inch}', '{input}')");
+                $"                                          (GETDATETIME(), 'AJ54100', '{eqpID}', '{towerNO}', '{uid}', '{sid}', '{lot}', '{qty}', '{manufacturer}', '{proDate}', '{inch}', '{input}')");
                 //strSendtime, strLinecode, strEquipid, strInfo[0], strInfo[1].Trim(), strInfo[2], strInfo[3], strInfo[4], strInfo[5], strInfo[6], strInfo[7], strInfo[8]);
 
             queryList1.Add(query2);
