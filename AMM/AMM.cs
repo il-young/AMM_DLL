@@ -1789,7 +1789,7 @@ namespace AMM
         {
             List<string> queryList1 = new List<string>();
             string query2 = string.Format($"INSERT INTO TB_MTL_INFO (DATETIME,LINE_CODE,EQUIP_ID,TOWER_NO,UID,SID,LOTID,QTY,MANUFACTURER,PRODUCTION_DATE,INCH_INFO,INPUT_TYPE) VALUES " +
-                $"                                          (GETDATETIME(), 'AJ54100', '{eqpID}', '{towerNO}', '{uid}', '{sid}', '{lot}', '{qty}', '{manufacturer}', '{proDate}', '{inch}', '{input}')");
+                $"(getdate(), 'AJ54100', '{eqpID}', '{towerNO}', '{uid}', '{sid}', '{lot}', '{qty}', '{manufacturer}', '{proDate}', '{inch}', '{input}')");
                 //strSendtime, strLinecode, strEquipid, strInfo[0], strInfo[1].Trim(), strInfo[2], strInfo[3], strInfo[4], strInfo[5], strInfo[6], strInfo[7], strInfo[8]);
 
             queryList1.Add(query2);
@@ -2552,7 +2552,7 @@ namespace AMM
         {
             string query = "";
 
-            query = string.Format(@"SELECT * FROM TB_MTL_INFO with(NOLOCK) WHERE LINE_CODE='{0}' and EQUIP_ID='{1}' and UID like '{2}_'", strLinecode, strEquipid, strUID);
+            query = string.Format(@"SELECT * FROM TB_MTL_INFO with(NOLOCK) WHERE LINE_CODE='{0}' and EQUIP_ID='{1}' and UID like '{2}'", strLinecode, strEquipid, strUID);
 
             DataTable dt = MSSql.GetData(query);
 
@@ -2669,11 +2669,12 @@ namespace AMM
 
             string query = "";
 
-            query = string.Format(@"INSERT INTO TB_PICK_READY_INFO (LINE_CODE,EQUIP_ID,PICKID,UID,REQUESTOR,TOWER_NO,SID,LOTID,QTY,MANUFACTURER,PRODUCTION_DATE,INCH_INFO,INPUT_TYPE, ORDER_TYPE) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}','{11}','{12}','{13}')",
+            query = string.Format(@"INSERT INTO TB_PICK_READY_INFO (LINE_CODE,EQUIP_ID,PICKID,UID,REQUESTOR,TOWER_NO,SID,LOTID,QTY,MANUFACTURER,PRODUCTION_DATE,INCH_INFO,INPUT_TYPE, ORDER_TYPE, [LAST_UPDATE_TIME]) VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}','{11}','{12}','{13}', GETDATE())",
                 strLinecode, strEquipid, strPickid, strUid, strRequestor, strTwrno, strSid, strLotid, strQty, strManufacturer, strProductiondate, strInchinfo, strInputtype, strOrdertype);
 
 
             queryList.Add(query);
+            queryList.Add("delete from [TB_PICK_READY_INFO] where DATEDIFF(DAY, [LAST_UPDATE_TIME], GETDATE()) >= 1");
             Dlog.Info(query);
             int nJudge = MSSql.SetData(queryList); ///return 확인 해서 false 값 날려 야 함.
 
