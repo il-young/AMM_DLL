@@ -1788,15 +1788,23 @@ namespace AMM
         public void SyncDataInsert(string eqpID, string towerNO, string uid, string sid, string lot, string qty, string manufacturer, string proDate, string inch, string input)
         {
             List<string> queryList1 = new List<string>();
-            string query2 = string.Format($"INSERT INTO TB_MTL_INFO (DATETIME,LINE_CODE,EQUIP_ID,TOWER_NO,UID,SID,LOTID,QTY,MANUFACTURER,PRODUCTION_DATE,INCH_INFO,INPUT_TYPE) VALUES " +
-                $"(getdate(), 'AJ54100', '{eqpID}', '{towerNO}', '{uid}', '{sid}', '{lot}', '{qty}', '{manufacturer}', '{proDate}', '{inch}', '{input}')");
+
+            string query1 = $"select * from TB_MTL_INFO with(nolock) where UID ='{uid}'";
+            queryList1.Add(query1);
+            DataTable dt = MSSql.GetData(query1);
+
+            if (dt.Rows.Count == 0)
+            {
+                string query2 = string.Format($"INSERT INTO TB_MTL_INFO (DATETIME,LINE_CODE,EQUIP_ID,TOWER_NO,UID,SID,LOTID,QTY,MANUFACTURER,PRODUCTION_DATE,INCH_INFO,INPUT_TYPE) VALUES " +
+                    $"(getdate(), 'AJ54100', '{eqpID}', '{towerNO}', '{uid}', '{sid}', '{lot}', '{qty}', '{manufacturer}', '{proDate}', '{inch}', '{input}')");
                 //strSendtime, strLinecode, strEquipid, strInfo[0], strInfo[1].Trim(), strInfo[2], strInfo[3], strInfo[4], strInfo[5], strInfo[6], strInfo[7], strInfo[8]);
 
-            queryList1.Add(query2);
+                queryList1.Add(query2);
 
-            Dlog.Info(query2);
+                Dlog.Info(query2);
 
-            int nJudge = MSSql.SetData(queryList1);
+                int nJudge = MSSql.SetData(queryList1);
+            }
         }
 
 
@@ -2450,6 +2458,13 @@ namespace AMM
             return "OK";
         }
 
+        private void DeletePickReadyInfo(string strLinecode, string strEquipid, string PickID)
+        {
+            string query = $"Delete FROM TB_PICK_READY_INFO WHERE LINE_CODE='{strLinecode}' and EQUIP_ID='{strEquipid}' and [LAST_UPDATE_TIME] <= DATEADD(HOUR,-1, GETDATE()) OR [LAST_UPDATE_TIME] is NULL)";
+
+            MSSql.SetData(query);
+        }
+
         public DataTable GetPickIDNo(string strLinecode, string strEquipid)
         {
             string query = "";
@@ -2457,6 +2472,7 @@ namespace AMM
             query = string.Format(@"SELECT * FROM TB_IDNUNMER_INFO with(NOLOCK) WHERE LINE_CODE='{0}' and EQUIP_ID='{1}'", strLinecode, strEquipid);
 
             DataTable dt = MSSql.GetData(query);
+            DeletePickReadyInfo(strLinecode, strEquipid, dt.Rows[0]["PICK_PREFIX"].ToString().Trim() + dt.Rows[0]["PICK_NUM"].ToString().Trim());
 
             return dt;
         }
